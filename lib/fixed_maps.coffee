@@ -12,12 +12,17 @@ module.exports =
     if name in ['user-packages', 'core-packages', 'core', 'custom', 'lower', 'upper', 'numbers']
       return this[name](op is '+')
     else
-      return @resolveKeymap(key)
+      return @resolveKeymap(op, name)
 
-  resolveKeymap: (name) ->
+  resolveKeymap: (op, name) ->
     pack = atom.packages.getLoadedPackage(name)
     return {} unless pack?
-    return keymap: pack.keymaps[1]
+    return execute: (reset = false) ->
+      if op ^ reset
+        atom.packages.getLoadedPackage(name).activateKeymaps()
+      else
+        atom.packages.getLoadedPackage(name).deactivateKeymaps()
+
 
   'user-packages': (op) ->
     execute: (reset = false) ->
