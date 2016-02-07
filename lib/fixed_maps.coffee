@@ -10,29 +10,31 @@ module.exports =
     op = key[0]
     name = key.substr(1)
     if name in ['user-packages', 'core-packages', 'core', 'custom', 'lower', 'upper', 'numbers']
-      return this[name](op)
+      return this[name](op is '+')
     else
-      return @resolveKeymap(op, name)
+      return @resolveKeymap(key)
 
-  resolveKeymap: (op, name) ->
+  resolveKeymap: (name) ->
     pack = atom.packages.getLoadedPackage(name)
     return {} unless pack?
     return keymap: pack.keymaps[1]
 
   'user-packages': (op) ->
-    execute: ->
+    execute: (reset = false) ->
+      _op = op ^ reset
       for pack in atom.packages.getLoadedPackages()
         continue if atom.packages.isBundledPackage pack.name
-        if op is '+'
+        if _op
           pack.activateKeymaps()
         else
           pack.deactivateKeymaps()
 
   'core-packages': (op) ->
-    execute: ->
+    execute: (reset = false) ->
+      _op = op ^ reset
       for pack in atom.packages.getLoadedPackages()
         continue unless atom.packages.isBundledPackage pack.name
-        if op is '+'
+        if _op
           pack.activateKeymaps()
         else
           pack.deactivateKeymaps()
@@ -42,7 +44,7 @@ module.exports =
     for keybinding in atom.keymaps.keyBindings
       continue if keybinding.source.indexOf(path.join('app.asar', 'keymaps')) is -1
       keys[keybinding.selector] ?= {}
-      if op is '+'
+      if op
         keys[keybinding.selector][keybinding.keystrokes] = keybinding.command
       else
         keys[keybinding.selector][keybinding.keystrokes] = 'unset!'
@@ -53,7 +55,7 @@ module.exports =
     for keybinding in atom.keymaps.keyBindings
       continue if keybinding.source is atom.keymaps.getUserKeymapPath()
       keys[keybinding.selector] ?= {}
-      if op is '+'
+      if op
         keys[keybinding.selector][keybinding.keystrokes] = keybinding.command
       else
         keys[keybinding.selector][keybinding.keystrokes] = 'unset!'

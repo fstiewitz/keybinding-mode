@@ -13,5 +13,12 @@
   "dependencies": {
     "season": "^5.2.0",
     "underscore-plus": "^1.0.0"
+  },
+  "consumedServices": {
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    }
   }
 }
