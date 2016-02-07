@@ -1,0 +1,17 @@
+{
+  "name": "keybinding-mode",
+  "main": "./lib/keybinding-mode",
+  "version": "0.0.0",
+  "description": "A short description of your package",
+  "keywords": [
+  ],
+  "repository": "https://github.com/deprint/keybinding-mode",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "dependencies": {
+    "season": "^5.2.0",
+    "underscore-plus": "^1.0.0"
+  }
+}
