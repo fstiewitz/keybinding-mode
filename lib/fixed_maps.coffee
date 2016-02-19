@@ -58,7 +58,7 @@ module.exports =
   'custom': (op) ->
     keys = {}
     for keybinding in atom.keymaps.keyBindings
-      continue if keybinding.source is atom.keymaps.getUserKeymapPath()
+      continue unless keybinding.source is atom.keymaps.getUserKeymapPath()
       keys[keybinding.selector] ?= {}
       if op
         keys[keybinding.selector][keybinding.keystrokes] = keybinding.command
