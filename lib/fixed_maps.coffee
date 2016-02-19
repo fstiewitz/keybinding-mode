@@ -1,6 +1,8 @@
 _ = require 'underscore-plus'
 path = require 'path'
 
+service_maps = null
+
 module.exports =
 
   matchesKeymap: (key) ->
@@ -16,12 +18,18 @@ module.exports =
 
   resolveKeymap: (op, name) ->
     pack = atom.packages.getLoadedPackage(name)
-    return @resolveByFilter(op, name) unless pack?
-    return execute: (reset = false) ->
-      if op ^ reset
-        atom.packages.getLoadedPackage(name).activateKeymaps()
-      else
-        atom.packages.getLoadedPackage(name).deactivateKeymaps()
+    if pack?
+      return execute: (reset = false) ->
+        if op ^ reset
+          atom.packages.getLoadedPackage(name).activateKeymaps()
+        else
+          atom.packages.getLoadedPackage(name).deactivateKeymaps()
+    else
+      return k if (k = @resolveByServiceKeymap(op, name))?
+      return @resolveByFilter(op, name)
+
+  resolveByServiceKeymap: (op, name) ->
+    (service_maps ? service_maps = require './service_maps').resolveKeymap op, name
 
   resolveByFilter: (op, name) ->
     filter = new RegExp(name)

@@ -1,4 +1,7 @@
 FixedMaps = require '../lib/fixed_maps'
+ServiceMaps = require '../lib/service_maps'
+
+{Disposable} = require 'atom'
 
 createPackage = (n) ->
   name: n
@@ -59,6 +62,38 @@ describe 'Fixed Maps', ->
     describe 'on wrong input', ->
       it 'returns false', ->
         expect(FixedMaps.matchesKeymap 'test-09').toBe false
+
+  describe 'on service keymap', ->
+    disp = null
+    k = null
+
+    beforeEach ->
+      k =
+        service_1: jasmine.createSpy('service_1').andCallFake ->
+          keymap:
+            s1:
+              k2: 'foo'
+        service_2: jasmine.createSpy('service_2').andCallFake ->
+          keymap:
+            s0:
+              k3: 'bar'
+      disp = ServiceMaps.consumeKeybindingMode k
+
+    afterEach ->
+      disp.dispose()
+      expect(FixedMaps.resolveKeymap true, 'service_1').toEqual {}
+
+    it 'returns a disposable', ->
+      expect(disp instanceof Disposable).toBe true
+
+    describe 'on ::resolveKeymap with Service Keymap', ->
+      it 'returns the service keymap', ->
+        expect(FixedMaps.resolveKeymap true, 'service_1').toEqual
+          keymap:
+            s1:
+              k2: 'foo'
+        expect(k.service_1).toHaveBeenCalledWith true
+        expect(k.service_2).not.toHaveBeenCalled()
 
   describe '::resolveKeymap', ->
     describe 'on wrong input', ->

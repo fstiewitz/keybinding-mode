@@ -7,6 +7,8 @@ _ = require 'underscore-plus'
 
 fixed_maps = require './fixed_maps'
 
+service_maps = null
+
 module.exports = KeybindingMode =
   subscriptions: null
   modes: null
@@ -27,6 +29,7 @@ module.exports = KeybindingMode =
     @statusBarTile = null
     @deactivateKeymap @current_keymap if @current_keymap?
     @current_keymap = null
+    service_maps = null
 
   serialize: ->
 
@@ -107,3 +110,6 @@ module.exports = KeybindingMode =
     element.appendChild @keybindingElement
     @statusBarTile = statusBar.addRightTile item: element, priority: 50
     @keybindingElement.innerText = 'default'
+
+  consumeKeybindingMode: (modes) ->
+    (service_maps ? service_maps = require './service_maps').consumeKeybindingMode modes
