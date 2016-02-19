@@ -9,20 +9,33 @@ module.exports =
   getKeymap: (key) ->
     op = key[0]
     name = key.substr(1)
-    if name in ['user-packages', 'core-packages', 'core', 'custom', 'lower', 'upper', 'numbers']
+    if name in ['user-packages', 'core-packages', 'all-core', 'custom', 'lower', 'upper', 'numbers']
       return this[name](op is '+')
     else
       return @resolveKeymap(op, name)
 
   resolveKeymap: (op, name) ->
     pack = atom.packages.getLoadedPackage(name)
-    return {} unless pack?
+    return @resolveByFilter(op, name) unless pack?
     return execute: (reset = false) ->
       if op ^ reset
         atom.packages.getLoadedPackage(name).activateKeymaps()
       else
         atom.packages.getLoadedPackage(name).deactivateKeymaps()
 
+  resolveByFilter: (op, name) ->
+    filter = new RegExp(name)
+    keys = null
+    for keybinding in atom.keymaps.getKeyBindings()
+      if filter.test(keybinding.command) or filter.test(keybinding.keystrokes)
+        keys ?= {}
+        keys[keybinding.selector] ?= {}
+        if op
+          keys[keybinding.selector][keybinding.keystrokes] = keybinding.command
+        else
+          keys[keybinding.selector][keybinding.keystrokes] = 'unset!'
+    return keymap: keys if keys?
+    return {}
 
   'user-packages': (op) ->
     execute: (reset = false) ->
@@ -44,7 +57,7 @@ module.exports =
         else
           pack.deactivateKeymaps()
 
-  'core': (op) ->
+  'all-core': (op) ->
     keys = {}
     for keybinding in atom.keymaps.keyBindings
       continue if keybinding.source.indexOf(path.join('app.asar', 'keymaps')) is -1

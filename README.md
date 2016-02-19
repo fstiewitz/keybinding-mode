@@ -10,6 +10,7 @@ keybinding-mode
 3. Open your custom keymap with `application:open-your-keymap`.
 4. Bind a key to `keybinding-mode:<KEYMAP-NAME>`, where `KEYMAP-NAME` is the name of a keymap in your keymode config file.
 5. `window:reload` to load the new keybindings.
+6. Load your keybinding-mode by pressing the key binding you have configured in step 4 or by executing `keybinding-mode:<KEYMAP-NAME>` manually through the command palette.
 
 ## Syntax
 
@@ -27,9 +28,13 @@ keybinding-mode
 1. another keymap in your keymode config file.
 2. `(+/-)user-packages` to enable/disable the keymap of all user packages.
 3. `(+/-)core-packages` to enable/disable the keymap of all core packages.
-4. `(+/-)core` to enable/disable all core keybindings.
+4. `(+/-)all-core` to enable/disable all core keybindings.
 5. `(+/-)custom` to enable/disable your custom keymap (this would also disable the keybinding you've set up for toggling the keymap!)
 6. `-lower` to disable all lowercase letters.
 7. `-upper` to disable all uppercase letters.
 8. `-numbers` to disable 0-9 keys.
 9. `(+/-)package-name` to enable/disable the keymap of `package-name`.
+10. `(+/-)regexp` to filter all key bindings with a regular expression:
+  * `^ctrl-k` to disable all keybindings, which begin with `ctrl-k`.
+  * `^window:` to disable all keybindings, whose commands begin with `window:`.
+  * `.` to disable ALL keybindings.

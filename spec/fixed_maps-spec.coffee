@@ -26,7 +26,7 @@ describe 'Fixed Maps', ->
         source: 'test0.cson'
         selector: 's0'
         keystrokes: 'k0'
-        command: 'command0'
+        command: 'command0:foo'
       }
       {
         source: 'test0.cson'
@@ -38,7 +38,7 @@ describe 'Fixed Maps', ->
         source: 'app.asar/keymaps'
         selector: 's1'
         keystrokes: 'k0'
-        command: 'command0'
+        command: 'command0:bla'
       }
       {
         source: 'test2.cson'
@@ -64,6 +64,20 @@ describe 'Fixed Maps', ->
     describe 'on wrong input', ->
       it 'returns {}', ->
         expect(FixedMaps.resolveKeymap true, 'test3').toEqual {}
+    describe 'on filter', ->
+      it 'returns the filtered keymap', ->
+        expect(FixedMaps.resolveKeymap false, '^k0$').toEqual
+          keymap:
+            s0:
+              k0: 'unset!'
+            s1:
+              k0: 'unset!'
+        expect(FixedMaps.resolveKeymap false, '^command0:').toEqual
+          keymap:
+            s0:
+              k0: 'unset!'
+            s1:
+              k0: 'unset!'
     describe 'on correct input', ->
       it 'returns a keymap', ->
         k = FixedMaps.resolveKeymap false, 'test2'
@@ -99,9 +113,9 @@ describe 'Fixed Maps', ->
       k.execute(true)
       expect(atom.packages.getLoadedPackage('test2').activateKeymaps).toHaveBeenCalled()
 
-  describe '::core', ->
+  describe '::all-core', ->
     it 'returns a keymap', ->
-      k = FixedMaps['core'] false
+      k = FixedMaps['all-core'] false
       expect(k.keymap).toBeDefined()
       expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeUndefined()
