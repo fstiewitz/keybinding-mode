@@ -67,6 +67,9 @@ module.exports = KeybindingMode =
     @modes[name].execute()
     @key_subscription = atom.keymaps.add 'keybinding-mode:' + name, @modes[name].keymap
 
+  consumeKeybindingMode: ({name, modes}) ->
+    (service_maps ? service_maps = require './service_maps').consumeKeybindingMode name, modes
+
   parse: (contents) ->
     ret = {}
     for key in Object.keys contents
@@ -110,6 +113,3 @@ module.exports = KeybindingMode =
     element.appendChild @keybindingElement
     @statusBarTile = statusBar.addRightTile item: element, priority: 50
     @keybindingElement.innerText = 'default'
-
-  consumeKeybindingMode: (modes) ->
-    (service_maps ? service_maps = require './service_maps').consumeKeybindingMode modes

@@ -73,11 +73,11 @@ describe 'Fixed Maps', ->
           keymap:
             s1:
               k2: 'foo'
-        service_2: jasmine.createSpy('service_2').andCallFake ->
+        service_2:
           keymap:
             s0:
               k3: 'bar'
-      disp = ServiceMaps.consumeKeybindingMode k
+      disp = ServiceMaps.consumeKeybindingMode 'spec', k
 
     afterEach ->
       disp.dispose()
@@ -86,14 +86,17 @@ describe 'Fixed Maps', ->
     it 'returns a disposable', ->
       expect(disp instanceof Disposable).toBe true
 
-    describe 'on ::resolveKeymap with Service Keymap', ->
+    describe 'on ::resolveByStaticServiceKeymap', ->
       it 'returns the service keymap', ->
-        expect(FixedMaps.resolveKeymap true, 'service_1').toEqual
+        expect(FixedMaps.getKeymap 'service_2').toEqual k.service_2
+
+    describe 'on ::resolveByDynamicServiceKeymap', ->
+      it 'returns the service keymap', ->
+        expect(FixedMaps.getKeymap '-service_1').toEqual
           keymap:
             s1:
               k2: 'foo'
-        expect(k.service_1).toHaveBeenCalledWith true
-        expect(k.service_2).not.toHaveBeenCalled()
+        expect(k.service_1).toHaveBeenCalledWith false
 
   describe '::resolveKeymap', ->
     describe 'on wrong input', ->

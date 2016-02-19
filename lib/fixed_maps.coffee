@@ -1,16 +1,18 @@
 _ = require 'underscore-plus'
 path = require 'path'
 
-service_maps = null
+service_maps = require './service_maps'
 
 module.exports =
 
   matchesKeymap: (key) ->
-    /^[-+][A-Za-z0-9-]+$/.test(key)
+    /^[-+][A-Za-z0-9-]+$/.test(key) or service_maps.matchesStaticKeymap(key)
 
   getKeymap: (key) ->
+    return k if (k = @resolveByStaticServiceKeymap(key))?
     op = key[0]
     name = key.substr(1)
+    return j if (j = @resolveByDynamicServiceKeymap(op is '+', name))?
     if name in ['user-packages', 'core-packages', 'all-core', 'custom', 'lower', 'upper', 'numbers']
       return this[name](op is '+')
     else
@@ -18,18 +20,18 @@ module.exports =
 
   resolveKeymap: (op, name) ->
     pack = atom.packages.getLoadedPackage(name)
-    if pack?
-      return execute: (reset = false) ->
-        if op ^ reset
-          atom.packages.getLoadedPackage(name).activateKeymaps()
-        else
-          atom.packages.getLoadedPackage(name).deactivateKeymaps()
-    else
-      return k if (k = @resolveByServiceKeymap(op, name))?
-      return @resolveByFilter(op, name)
+    return @resolveByFilter(op, name) unless pack?
+    return execute: (reset = false) ->
+      if op ^ reset
+        atom.packages.getLoadedPackage(name).activateKeymaps()
+      else
+        atom.packages.getLoadedPackage(name).deactivateKeymaps()
 
-  resolveByServiceKeymap: (op, name) ->
-    (service_maps ? service_maps = require './service_maps').resolveKeymap op, name
+  resolveByStaticServiceKeymap: (name) ->
+    service_maps.resolveStaticKeymap name
+
+  resolveByDynamicServiceKeymap: (op, name) ->
+    service_maps.resolveDynamicKeymap op, name
 
   resolveByFilter: (op, name) ->
     filter = new RegExp(name)
