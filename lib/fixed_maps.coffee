@@ -16,13 +16,15 @@ module.exports =
     if name in ['user-packages', 'core-packages', 'all-core', 'custom', 'lower', 'upper', 'numbers']
       return this[name](op is '+')
     else
-      return @resolveKeymap(op, name)
+      return @resolveKeymap(op is '+', name)
 
   resolveKeymap: (op, name) ->
     pack = atom.packages.getLoadedPackage(name)
     return @resolveByFilter(op, name) unless pack?
+    def = pack.keymapActivated
     return execute: (reset = false) ->
-      if op ^ reset
+      console.log atom.packages.getLoadedPackage(name)
+      if (op ^ reset) or (reset and def)
         atom.packages.getLoadedPackage(name).activateKeymaps()
       else
         atom.packages.getLoadedPackage(name).deactivateKeymaps()
@@ -48,24 +50,32 @@ module.exports =
     return {}
 
   'user-packages': (op) ->
-    execute: (reset = false) ->
+    def = {}
+    for pack in atom.packages.getLoadedPackages()
+      continue if atom.packages.isBundledPackage pack.name
+      def[pack.name] = pack.keymapActivated
+    return execute: (reset = false) ->
       _op = op ^ reset
       for pack in atom.packages.getLoadedPackages()
         continue if atom.packages.isBundledPackage pack.name
-        if _op
-          pack.activateKeymaps()
+        if _op or (reset and def[pack.name])
+          pack.activateKeymaps?()
         else
-          pack.deactivateKeymaps()
+          pack.deactivateKeymaps?()
 
   'core-packages': (op) ->
-    execute: (reset = false) ->
+    def = {}
+    for pack in atom.packages.getLoadedPackages()
+      continue unless atom.packages.isBundledPackage pack.name
+      def[pack.name] = pack.keymapActivated
+    return execute: (reset = false) ->
       _op = op ^ reset
       for pack in atom.packages.getLoadedPackages()
         continue unless atom.packages.isBundledPackage pack.name
-        if _op
-          pack.activateKeymaps()
+        if _op or (reset and def[pack.name])
+          pack.activateKeymaps?()
         else
-          pack.deactivateKeymaps()
+          pack.deactivateKeymaps?()
 
   'all-core': (op) ->
     keys = {}

@@ -86,22 +86,22 @@ module.exports = KeybindingMode =
         if obj[inh]
           _.deepExtend obj[key].keymap, obj[inh].keymap
           if obj[inh].execute?
-            obj[key].execute = ((x, y) -> (r) -> x(r); y(r))(obj[inh].execute, obj[key].execute)
+            obj[key].execute = ((x, y) -> (r) -> y(r); x(r))(obj[inh].execute, obj[key].execute)
         else if config[inh]
           @buildKeymap obj, inh, config[inh]
           _.deepExtend obj[key].keymap, obj[inh].keymap
           if obj[inh].execute?
-            obj[key].execute = ((x, y) -> (r) -> x(r); y(r))(obj[inh].execute, obj[key].execute)
+            obj[key].execute = ((x, y) -> (r) -> y(r); x(r))(obj[inh].execute, obj[key].execute)
         else if fixed_maps.matchesKeymap inh
           fm = fixed_maps.getKeymap inh
           _.deepExtend obj[key].keymap, fm.keymap
           if fm.execute?
-            obj[key].execute = ((x, y) -> (r) -> x(r); y(r))(fm.execute, obj[key].execute)
+            obj[key].execute = ((x, y) -> (r) -> y(r); x(r))(fm.execute, obj[key].execute)
         else
           console.log 'Could not resolve name: ' + inh
     _.deepExtend obj[key].keymap, config[key].keymap
     if config[key].execute?
-      obj[key].execute = ((x, y) -> (r) -> x(r); y(r))(config[key].execute, obj[key].execute)
+      obj[key].execute = ((x, y) -> (r) -> y(r); x(r))(config[key].execute, obj[key].execute)
 
   consumeStatusBar: (statusBar) ->
     element = document.createElement 'div'
