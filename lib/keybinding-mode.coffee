@@ -7,6 +7,8 @@ _ = require 'underscore-plus'
 
 fixed_maps = require './fixed_maps'
 
+KeyModeDB = require './keymode-db'
+
 service_maps = null
 
 module.exports = KeybindingMode =

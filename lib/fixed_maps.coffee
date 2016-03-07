@@ -23,7 +23,6 @@ module.exports =
     return @resolveByFilter(op, name) unless pack?
     def = pack.keymapActivated
     return execute: (reset = false) ->
-      console.log atom.packages.getLoadedPackage(name)
       if (op ^ reset) or (reset and def)
         atom.packages.getLoadedPackage(name).activateKeymaps()
       else

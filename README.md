@@ -35,8 +35,8 @@ keybinding-mode
 8. `-numbers` to disable 0-9 keys.
 9. `(+/-)package-name` to enable/disable the keymap of `package-name`.
 10. `(+/-)regexp` to filter all key bindings with a regular expression, for example:
-  * `^ctrl-k` to disable all keybindings, which begin with `ctrl-k`.
-  * `^window:` to disable all keybindings, whose commands begin with `window:`.
+  * `^ctrl-k` to disable all keybindings which begin with `ctrl-k`.
+  * `^window:` to disable all keybindings whose commands begin with `window:`.
   * `.` to disable ALL keybindings.
 
 Order when looking up keymode names:
