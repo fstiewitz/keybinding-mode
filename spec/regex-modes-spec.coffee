@@ -1,6 +1,6 @@
 modes = require '../lib/regex-modes'
 
-fdescribe 'Mode Provider - Regular Expressions', ->
+describe 'Mode Provider - Regular Expressions', ->
 
   beforeEach ->
     modes.activate()
