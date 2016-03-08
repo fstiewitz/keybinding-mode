@@ -1,5 +1,4 @@
-FixedMaps = require '../lib/fixed_maps'
-ServiceMaps = require '../lib/service_maps'
+modes = require '../lib/dynamic-modes'
 
 {Disposable} = require 'atom'
 
@@ -8,7 +7,7 @@ createPackage = (n) ->
   activateKeymaps: jasmine.createSpy('activateKeymaps')
   deactivateKeymaps: jasmine.createSpy('deactivateKeymaps')
 
-describe 'Fixed Maps', ->
+describe 'Dynamic Modes - Package Test', ->
 
   p = null
   s = null
@@ -55,81 +54,20 @@ describe 'Fixed Maps', ->
   afterEach ->
     atom.packages = s
 
-  describe '::matchesKeymap', ->
-    describe 'on correct input', ->
-      it 'returns true', ->
-        expect(FixedMaps.matchesKeymap '+test-09').toBe true
-    describe 'on wrong input', ->
-      it 'returns false', ->
-        expect(FixedMaps.matchesKeymap 'test-09').toBe false
-
-  describe 'on service keymap', ->
-    disp = null
-    k = null
-
-    beforeEach ->
-      k =
-        service_1: jasmine.createSpy('service_1').andCallFake ->
-          keymap:
-            s1:
-              k2: 'foo'
-        service_2:
-          keymap:
-            s0:
-              k3: 'bar'
-      disp = ServiceMaps.consumeKeybindingMode 'spec', k
-
-    afterEach ->
-      disp.dispose()
-      expect(FixedMaps.resolveKeymap true, 'service_1').toEqual {}
-
-    it 'returns a disposable', ->
-      expect(disp instanceof Disposable).toBe true
-
-    describe 'on ::resolveByStaticServiceKeymap', ->
-      it 'returns the service keymap', ->
-        expect(FixedMaps.getKeymap 'service_2').toEqual k.service_2
-
-    describe 'on ::resolveByDynamicServiceKeymap', ->
-      it 'returns the service keymap', ->
-        expect(FixedMaps.getKeymap '-service_1').toEqual
-          keymap:
-            s1:
-              k2: 'foo'
-        expect(k.service_1).toHaveBeenCalledWith false
-
-  describe '::resolveKeymap', ->
-    describe 'on wrong input', ->
-      it 'returns {}', ->
-        expect(FixedMaps.resolveKeymap true, 'test3').toEqual {}
-    describe 'on filter', ->
-      it 'returns the filtered keymap', ->
-        expect(FixedMaps.resolveKeymap false, '^k0$').toEqual
-          keymap:
-            s0:
-              k0: 'unset!'
-            s1:
-              k0: 'unset!'
-        expect(FixedMaps.resolveKeymap false, '^command0:').toEqual
-          keymap:
-            s0:
-              k0: 'unset!'
-            s1:
-              k0: 'unset!'
-    describe 'on correct input', ->
-      it 'returns a keymap', ->
-        k = FixedMaps.resolveKeymap false, 'test2'
-        expect(k.keymap).toBeUndefined()
-        expect(k.inherited).toBeUndefined()
-        expect(k.execute).toBeDefined()
-        k.execute(false)
-        expect(atom.packages.getLoadedPackage('test2').deactivateKeymaps).toHaveBeenCalled()
-        k.execute(true)
-        expect(atom.packages.getLoadedPackage('test2').activateKeymaps).toHaveBeenCalled()
+  describe '::getPackageMode', ->
+    it 'returns a keymap', ->
+      k = modes.getPackageMode false, 'test2'
+      expect(k.keymap).toBeUndefined()
+      expect(k.inherited).toBeUndefined()
+      expect(k.execute).toBeDefined()
+      k.execute(false)
+      expect(atom.packages.getLoadedPackage('test2').deactivateKeymaps).toHaveBeenCalled()
+      k.execute(true)
+      expect(atom.packages.getLoadedPackage('test2').activateKeymaps).toHaveBeenCalled()
 
   describe '::user-packages', ->
     it 'returns a keymap', ->
-      k = FixedMaps['user-packages'] false
+      k = modes['user-packages'] false
       expect(k.keymap).toBeUndefined()
       expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeDefined()
@@ -142,7 +80,7 @@ describe 'Fixed Maps', ->
 
   describe '::core-packages', ->
     it 'returns a keymap', ->
-      k = FixedMaps['core-packages'] false
+      k = modes['core-packages'] false
       expect(k.keymap).toBeUndefined()
       expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeDefined()
@@ -153,7 +91,7 @@ describe 'Fixed Maps', ->
 
   describe '::all-core', ->
     it 'returns a keymap', ->
-      k = FixedMaps['all-core'] false
+      k = modes['all-core'] false
       expect(k.keymap).toBeDefined()
       expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeUndefined()
@@ -161,7 +99,7 @@ describe 'Fixed Maps', ->
 
   describe '::custom', ->
     it 'returns a keymap', ->
-      k = FixedMaps['custom'] false
+      k = modes['custom'] false
       expect(k.keymap).toBeDefined()
       expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeUndefined()
