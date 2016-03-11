@@ -12,7 +12,7 @@ module.exports =
 
   getDynamicMode: (name) ->
 
-  validMode: (name) ->
+  isValidMode: (name) ->
     while name isnt ''
       unless (m = /^([+-])([cks])(.)/.exec name)?
         report "Couldn't match regex start #{name}"
@@ -34,6 +34,13 @@ module.exports =
       else
         report "Couldn't match regex #{name}"
         return false
+    return true
+
+  isSpecial: (inh) ->
+    return false if inh.length < 3
+    return false unless inh[1] in ['key', 'selector', 'command', 'source']
+    return false unless typeof inh[2] is 'string'
+    return false if inh[3]? and typeof inh[3] isnt 'string'
     return true
 
   getRegexWithSeparator: (sep) ->

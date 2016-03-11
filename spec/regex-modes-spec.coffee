@@ -10,12 +10,12 @@ describe 'Mode Provider - Regular Expressions', ->
 
   describe 'Test validMode', ->
     it 'simple matching', ->
-      expect(modes.validMode '+k/^ctrl-/').toBe true
+      expect(modes.isValidMode '+k/^ctrl-/').toBe true
     it 'simple replace', ->
-      expect(modes.validMode '+k/^ctrl-//').toBe true
+      expect(modes.isValidMode '+k/^ctrl-//').toBe true
     it 'simple fail (wrong attribute)', ->
-      expect(modes.validMode '+f/^ctrl-//').toBe false
+      expect(modes.isValidMode '+f/^ctrl-//').toBe false
     it 'simple fail (wrong separator)', ->
-      expect(modes.validMode '+c/^ctrl-z#').toBe false
+      expect(modes.isValidMode '+c/^ctrl-z#').toBe false
     it 'simple fail (wrong second separator)', ->
-      expect(modes.validMode '+k/^ctrl-z/#').toBe false
+      expect(modes.isValidMode '+k/^ctrl-z/#').toBe false

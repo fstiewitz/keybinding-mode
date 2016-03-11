@@ -7,10 +7,10 @@ describe 'Mode Provider - Dynamic', ->
 
   describe 'Test validMode', ->
     it 'not dynamic', ->
-      expect(modes.validMode 'custom').toBe false
+      expect(modes.isValidMode 'custom').toBe false
     it 'core mode', ->
-      expect(modes.validMode '-user-packages').toBe true
+      expect(modes.isValidMode '-user-packages').toBe true
     it 'loaded package', ->
-      expect(modes.validMode '-tree-view').toBe true
+      expect(modes.isValidMode '-tree-view').toBe true
     it 'unloaded package', ->
-      expect(modes.validMode '-foo-bar').toBe false
+      expect(modes.isValidMode '-foo-bar').toBe false

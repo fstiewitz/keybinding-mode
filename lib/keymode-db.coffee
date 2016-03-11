@@ -58,11 +58,10 @@ module.exports =
         command_map = {}
         for mode in Object.keys contents
           @modes[mode] =
-            inherited: contents[mode]
+            inherited: ['!all', contents[mode]]
             resolved: false
             execute: null
             keymap: null
-          @modes[mode].inh.splice(0, 0, '!all')
           command_map['keybinding-mode:' + mode] = ((_this, name) -> -> _this.toggleKeymap(name))(this, mode)
         @mode_subscription = atom.commands.add 'atom-workspace', command_map
         @emitter.emit 'reload'
@@ -78,104 +77,157 @@ module.exports =
   deactivateKeymap: (name) ->
     @current_keymap = null
     @key_subscription?.dispose()
-    mode = @resolve(name)
+    mode = @resolveWithTest(name)
     return unless mode?
     mode.execute true
     @emitter.emit 'deactivate', name
 
   activateKeymap: (name) ->
     @current_keymap = name
-    mode = @resolve(name)
+    mode = @resolveWithTest(name)
     return unless mode?
     mode.execute()
     @key_subscription = atom.keymaps.add 'keybinding-mode:' + name, mode.keymap
     @emitter.emit 'activate', name
 
-  resolve: (name) ->
+  resolveWithTest: (name) ->
     return @modes[name] if @modes[name]?.resolved
     return unless @dryRun name
-    return @_resolve name, @modes[name], '!all'
+    return @_resolve name
 
-  _resolve: (name, mode, source, _static) ->
-    return unless mode?
-    return @modes[name] if @modes[name].resolved
+  resolve: (name) ->
+    return @modes[name] if @modes[name]?.resolved
+    return @_resolve name
 
-    __static = [true]
-
-    inherited = mode.inherited.slice()
-    source = @sourceFromElement inherited.shift(), source, __static
-
-    strictly_static = __static[0]
-
-    for inh in inherited
-      switch (typeof inh)
-        when 'string'
-          if @isStaticMode inh
-            _mode = @getStaticMode inh
-          else
-            _mode = @getDynamicMode inh
-            strictly_static = false
+  _resolve: (name) ->
+    inh = @modes[name].inherited.slice()
+    if inh.length > 1
+      source = @getSource inh.shift()
+    else
+      source = '!all'
+    for i in inh
+      if (typeof inh) is 'string'
+        if @isStatic inh
+          m = @getStatic inh
         else
-          if @isKeymap inh
-            _mode =
-              inherited: []
-              resolved: false
-              execute: inh.execute
-              keymap: inh.keymap
-          else if @isCombined inh
-            _mode = @getCombined inh
-          else if @isSpecial inh
-            _mode = @getSpecial inh, __static
-            strictly_static = false unless __static[0]
-          else
-            _mode =
-              inherited: inh
-              resolved: false
-              execute: null
-              keymap: null
-      _mode = @_resolve @getName(inh), _mode, source, __static
-      strictly_static = false unless __static[0]
-      @filter _mode, source
-      @merge mode, _mode
-      @mergeFunctions mode.execute, _mode.execute
+          m = @getDynamic inh
+      else if inh instanceof Array
+        if @isSpecial inh
+          m = @getSpecial inh
+        else if @isCombined inh
+          m = @getCombined inh
+        else
+          m = @process inh
+      else
+        m = inh
+      @filter m, source
+      @merge @modes[name], m
+    return @modes[name]
 
-    @mode[name] = mode
-    @mode[name].resolved = true if strictly_static
-    _static[0] = strictly_static if _static?
-    return mode
+  getSource: (inh) ->
+    name = @getName inh
+    @modes[name] = inherited: [inh]
+    @resolve name
 
-  sourceFromElement: (el, source, _strict) ->
-    return source unless el?
-    return '!all' if el is source
-    mode =
-      inherited: [el]
-      resolved: false
-      execute: null
-      keymap: null
-    return @_resolve @getName(inh), mode, source
+  isStatic: (inh) ->
+    return not /^[+-]/.test inh[0]
 
-  getDynamicMode: (name, source) ->
-    if (m = serviceModes.getDynamicMode name)? or (m = dynamicModes.getDynamicMode name)? or (m = regexModes.getDynamicMode name)?
-      return @_resolve name, m, source
+  getStatic: (inh) ->
+    if (@modes[inh])?
+      return @resolve inh
+    if (@modes[inh] = serviceModes.getStaticMode inh)?
+      return @resolve inh
+    report "Assertion: getStatic must work on #{inh}"
     return null
 
-  getStaticMode: (name, source) ->
-    if (m = @modes[name])? or (m = serviceModes.getStaticMode name)?
-      return @_resolve name, m, source
+  getDynamic: (inh) ->
+    op = inh[0] is '+'
+    name = inh.substr(1)
+    if (@modes[inh] = serviceModes.getDynamicMode op, name)?
+      return @resolve inh
+    if (@modes[inh] = dynamicModes.getDynamicMode op, name)?
+      return @resolve inh
+    if (@modes[inh] = regexModes.getDynamicMode op, name)?
+      return @resolve inh
+    report "Assertion: getDynamic must work on #{inh}"
     return null
+
+  getSpecial: (inh) ->
+    return regexModes.getSpecial inh
 
   getCombined: (inh) ->
-    r = []
-    left = inh.shift
-    op = inh.shift
-    right = inh.shift
-    if op is '&'
-      return {inherited: [left, right]}
-    else
-      return {inherited: [left, '+', right]}
+    name = @getName inh
+    @modes[name] = inherited: @_getCombined(inh.slice())
+    @resolve name
 
-  getSpecial: (inh, _static) ->
-    return regexModes.getSpecial inh, _static
+  process: (inh) ->
+    name = @getName inh
+    @modes[name] = inherited: inh
+    @resolve name
+
+  getName: (name) ->
+    return name if (typeof name) is 'string'
+    md5.update(JSON.stringify(name))
+    md5.digest('hex')
+
+  merge: (dest, source) ->
+    return dest.keymap if source is '!all'
+    return dest if source is null
+    _.deepExtend dest.keymap, source.keymap
+    return unless dest? and source?
+    if dest.execute and source?.execute
+      dest.execute = ((x, y) -> (r) -> x r; y r)(dest.execute, source.execute)
+    else if source?.execute
+      dest.execute = source.execute
+
+  filter: (dest, source) ->
+    return dest if source is '!all'
+    dest.keymap = _.pick dest.keymap, (v, k) ->
+      return false unless source.keymap[k]?
+      dest.keymap[k] = _.pick dest.keymap[k], (v, k2) ->
+        return false unless source.keymap[k][k2]?
+        return true
+      return true
+
+  _getCombined: (inh) ->
+    a = inh.shift()
+    op = inh.shift()
+    b = inh.shift()
+
+    if a instanceof Array and @isCombined a
+      a = @_getCombined a
+    if b instanceof Array and @isCombined b
+      b = @_getCombined b
+
+    if op is '&'
+      return [a, b]
+    else
+      return [a, '+', b]
+
+  dryRun: (name) ->
+    mode = @modes[name]
+    return false unless mode?
+    return true if mode?.resolved
+    return @_dryRun mode.inherited
+
+  _dryRun: (inh) ->
+    if (typeof inh) is 'string'
+      return @validMode inh
+    else if inh instanceof Array
+      return @validSpecial inh if @isSpecial inh
+      return @validCombined inh if @isCombined inh
+      if inh.length is 0
+        report 'Empty array not allowed'
+        return false
+      else if inh.length is 1
+        report 'One-element-array not allowed'
+        return false
+      return false for i in inh when not @_dryRun i
+    else
+      unless inh.keymap or inh.execute
+        report "Object #{inh} does not contain keymap or function"
+        return false
+    return true
 
   isCombined: (inh) ->
     for i in inh
@@ -183,73 +235,29 @@ module.exports =
     return false
 
   isSpecial: (inh) ->
-    return inh[0][0] is '!'
-
-  isKeymap: (mode) ->
-    return mode.keymap? or mode.execute?
-
-  isStaticMode: (name) ->
-    return true if @modes[name]?
-    return true if serviceModes.isStaticMode name
-    return false
-
-  getName: (name) ->
-    return name if (typeof name) is 'string'
-    md5.update(JSON.stringify(name))
-    md5.digest('hex')
-
-  mergeFunctions: (mode, a, b) ->
-    if a? and b?
-      mode.execute = ((x, y) -> (r) -> x r; y r)(a, b)
-    else if a?
-      mode.execute = a
-    else if b?
-      mode.execute = b
-
-  merge: (dest, source) ->
-    return dest.keymap if source is '!all'
-    _.deepExtend dest.keymap, source.keymap
-
-  filter: (dest, source) ->
-    return dest if source is '!all'
-    dest.keymap = _.pick dest.keymap, (v, k) ->
-      return false unless source[k]?
-      dest.keymap[k] = _.pick dest.keymap[k], (v, k2) ->
-        return false unless source[k][k2]?
-        return true
-      return true
-
-  dryRun: (name) ->
-    mode = @modes[name]
-    return false unless mode?
-    return true if mode?.resolved
-    if mode.inherited
-      if (typeof mode.inherited) isnt 'object'
-        atom.notifications?.addError "Unknown type of inherited array: #{typeof mode.inherited}"
-        return false
-      return @dryRunInh mode.inherited
-    return true
-
-  dryRunInh: (inherited, first = 1) ->
-    for inh, index in inherited
-      if (typeof inh) is 'string'
-        return false unless @validMode inh
-      else if (typeof inh) is 'object'
-        if (inh.length + first) is 0
-          atom.notifications?.addError "Empty array in #{inherited.toString()} at #{index}"
-          return false
-        else if (inh.length + first) is 1
-          atom.notifications?.addWarning "One-element-array in #{inherited.toString()} at #{index}"
-          return false
-        return false unless @dryRunInh inh, 0
-      else
-        atom.notifications?.addError "Unknown type in #{inherited.toString()} at #{index}: #{typeof inh}"
-        return false
-    return true
+    return (typeof inh[0]) is 'string' and inh[0][0] is '!' and inh[0] isnt '!all'
 
   validMode: (name) ->
+    return true if name is '!all'
     return true if @modes[name]?
-    return true if serviceModes.validMode name
-    return true if dynamicModes.validMode name
-    return true if regexModes.validMode name
+    return true if serviceModes.isValidMode name
+    return true if dynamicModes.isValidMode name
+    return true if regexModes.isValidMode name
     return false
+
+  validSpecial: (inh) ->
+    return true if regexModes.isSpecial inh
+    report "#{inh} is not a valid special form"
+    return false
+
+  validCombined: (inh) ->
+    next_is_filter = true
+    for i in inh
+      if next_is_filter
+        return false unless @_dryRun i
+      else
+        unless (typeof i) is 'string' and /^[&|]$/.test i
+          report "#{i} supposed to be operator"
+          return false
+      next_is_filter = not next_is_filter
+    return true

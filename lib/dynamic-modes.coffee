@@ -25,9 +25,10 @@ module.exports =
       else
         atom.packages.getLoadedPackage(name)?.deactivateKeymaps?()
 
-  validMode: (name) ->
+  isValidMode: (name) ->
     return false unless /^(\+|\-)/.test name
     _name = name.substr(1)
+    return true if _name is ''
     return true if _name in [
       'core-packages'
       'user-packages'
