@@ -57,6 +57,7 @@ describe 'Dynamic Modes - Package Test', ->
   describe '::getPackageMode', ->
     it 'returns a keymap', ->
       k = modes.getPackageMode false, 'test2'
+      k = k[0]
       expect(k.keymap).toBeUndefined()
       expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeDefined()
@@ -68,6 +69,7 @@ describe 'Dynamic Modes - Package Test', ->
   describe '::user-packages', ->
     it 'returns a keymap', ->
       k = modes['user-packages'] false
+      k = k[0]
       expect(k.keymap).toBeUndefined()
       expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeDefined()
@@ -81,6 +83,7 @@ describe 'Dynamic Modes - Package Test', ->
   describe '::core-packages', ->
     it 'returns a keymap', ->
       k = modes['core-packages'] false
+      k = k[0]
       expect(k.keymap).toBeUndefined()
       expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeDefined()
@@ -92,6 +95,7 @@ describe 'Dynamic Modes - Package Test', ->
   describe '::all-core', ->
     it 'returns a keymap', ->
       k = modes['all-core'] false
+      k = k[0]
       expect(k.keymap).toBeDefined()
       expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeUndefined()
@@ -100,6 +104,7 @@ describe 'Dynamic Modes - Package Test', ->
   describe '::custom', ->
     it 'returns a keymap', ->
       k = modes['custom'] false
+      k = k[0]
       expect(k.keymap).toBeDefined()
       expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeUndefined()

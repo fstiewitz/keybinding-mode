@@ -143,17 +143,25 @@ module.exports =
   getDynamic: (inh) ->
     op = inh[0] is '+'
     name = inh.substr(1)
-    if (@modes[inh] = serviceModes.getDynamicMode op, name)?
+    if (m = serviceModes.getDynamicMode op, name)?
+      @modes[inh] = inherited: m
       return @resolve inh
-    if (@modes[inh] = dynamicModes.getDynamicMode op, name)?
+    if (m = dynamicModes.getDynamicMode op, name)?
+      @modes[inh] = inherited: m
       return @resolve inh
-    if (@modes[inh] = regexModes.getDynamicMode op, name)?
+    if (m = regexModes.getDynamicMode op, name)?
+      @modes[inh] = inherited: m
       return @resolve inh
     report "Assertion: getDynamic must work on #{inh}"
     return null
 
   getSpecial: (inh) ->
-    return regexModes.getSpecial inh
+    name = @getName inh
+    if (m = regexModes.getSpecial inh)?
+      @modes[name] = inherited: m
+      return @resolve name
+    report "Assertion: getSpecial must work on #{inh}"
+    return null
 
   getCombined: (inh) ->
     name = @getName inh

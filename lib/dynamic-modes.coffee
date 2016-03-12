@@ -19,11 +19,13 @@ module.exports =
 
   getPackageMode: (op, name) ->
     def = atom.packages.getLoadedPackage(name)?.keymapActivated
-    return execute: (reset = false) ->
-      if (op ^ reset) or (reset and def)
-        atom.packages.getLoadedPackage(name)?.activateKeymaps?()
-      else
-        atom.packages.getLoadedPackage(name)?.deactivateKeymaps?()
+    return [
+      execute: (reset = false) ->
+        if (op ^ reset) or (reset and def)
+          atom.packages.getLoadedPackage(name)?.activateKeymaps?()
+        else
+          atom.packages.getLoadedPackage(name)?.deactivateKeymaps?()
+    ]
 
   isValidMode: (name) ->
     return false unless /^(\+|\-)/.test name
@@ -46,28 +48,32 @@ module.exports =
     for pack in atom.packages.getLoadedPackages()
       continue if atom.packages.isBundledPackage pack.name
       def[pack.name] = pack.keymapActivated
-    return execute: (reset = false) ->
-      _op = op ^ reset
-      for pack in atom.packages.getLoadedPackages()
-        continue if atom.packages.isBundledPackage pack.name
-        if _op or (reset and def[pack.name])
-          pack.activateKeymaps?()
-        else
-          pack.deactivateKeymaps?()
+    return [
+      execute: (reset = false) ->
+        _op = op ^ reset
+        for pack in atom.packages.getLoadedPackages()
+          continue if atom.packages.isBundledPackage pack.name
+          if _op or (reset and def[pack.name])
+            pack.activateKeymaps?()
+          else
+            pack.deactivateKeymaps?()
+    ]
 
   'core-packages': (op) ->
     def = {}
     for pack in atom.packages.getLoadedPackages()
       continue unless atom.packages.isBundledPackage pack.name
       def[pack.name] = pack.keymapActivated
-    return execute: (reset = false) ->
-      _op = op ^ reset
-      for pack in atom.packages.getLoadedPackages()
-        continue unless atom.packages.isBundledPackage pack.name
-        if _op or (reset and def[pack.name])
-          pack.activateKeymaps?()
-        else
-          pack.deactivateKeymaps?()
+    return [
+      execute: (reset = false) ->
+        _op = op ^ reset
+        for pack in atom.packages.getLoadedPackages()
+          continue unless atom.packages.isBundledPackage pack.name
+          if _op or (reset and def[pack.name])
+            pack.activateKeymaps?()
+          else
+            pack.deactivateKeymaps?()
+    ]
 
   'all-core': (op) ->
     keys = {}
@@ -78,7 +84,7 @@ module.exports =
         keys[keybinding.selector][keybinding.keystrokes] = keybinding.command
       else
         keys[keybinding.selector][keybinding.keystrokes] = 'unset!'
-    return keymap: keys
+    return [keymap: keys]
 
   'custom': (op) ->
     keys = {}
@@ -89,22 +95,22 @@ module.exports =
         keys[keybinding.selector][keybinding.keystrokes] = keybinding.command
       else
         keys[keybinding.selector][keybinding.keystrokes] = 'unset!'
-    return keymap: keys
+    return [keymap: keys]
 
   'lower': ->
     keys = 'atom-text-editor:not(.mini)': {}
     for key in 'abcdefghijklmnopqrstuvwxyz'.split('')
       keys['atom-text-editor:not(.mini)'][key] = 'abort!'
-    return keymap: keys
+    return [keymap: keys]
 
   'upper': ->
     keys = 'atom-text-editor:not(.mini)': {}
     for key in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
       keys['atom-text-editor:not(.mini)'][key] = 'abort!'
-    return keymap: keys
+    return [keymap: keys]
 
   'numbers': ->
     keys = 'atom-text-editor:not(.mini)': {}
     for key in [0..9]
       keys['atom-text-editor:not(.mini)'][key + ''] = 'abort!'
-    return keymap: keys
+    return [keymap: keys]
