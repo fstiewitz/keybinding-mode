@@ -4,11 +4,19 @@ dynamicModes = require './dynamic-modes'
 regexModes = require './regex-modes'
 serviceModes = require './service-modes'
 
-md5 = require('crypto').createHash('md5')
+crypto = require('crypto')
+
+_ = require('underscore-plus')
 
 report = (msg) ->
   atom.notifications?.addError msg
   console.log msg
+
+pick = (o, f) ->
+  r = {}
+  for k in Object.keys(o)
+    r[k] = o[k] if f(k)
+  return r
 
 module.exports =
   modes: {} # Stores keybinding modes
@@ -57,8 +65,12 @@ module.exports =
         @mode_subscription?.dispose()
         command_map = {}
         for mode in Object.keys contents
+          if contents[mode] instanceof Array
+            contents[mode].splice(0, 0, '!all')
+          else
+            contents[mode] = ['!all', contents[mode]]
           @modes[mode] =
-            inherited: ['!all', contents[mode]]
+            inherited: contents[mode]
             resolved: false
             execute: null
             keymap: null
@@ -106,31 +118,32 @@ module.exports =
     else
       source = '!all'
     for i in inh
-      if (typeof inh) is 'string'
-        if @isStatic inh
-          m = @getStatic inh
+      if (typeof i) is 'string'
+        if @isStatic i
+          m = @getStatic i
         else
-          m = @getDynamic inh
-      else if inh instanceof Array
-        if @isSpecial inh
-          m = @getSpecial inh
-        else if @isCombined inh
-          m = @getCombined inh
+          m = @getDynamic i
+      else if i instanceof Array
+        if @isSpecial i
+          m = @getSpecial i
+        else if @isCombined i
+          m = @getCombined i
         else
-          m = @process inh
+          m = @process i
       else
-        m = inh
+        m = i
       @filter m, source
       @merge @modes[name], m
     return @modes[name]
 
   getSource: (inh) ->
+    return inh if inh is '!all'
     name = @getName inh
-    @modes[name] = inherited: [inh]
+    @modes[name] ?= inherited: [inh]
     @resolve name
 
   isStatic: (inh) ->
-    return not /^[+-]/.test inh[0]
+    return not /^[!+-]/.test inh[0]
 
   getStatic: (inh) ->
     if (@modes[inh])?
@@ -140,19 +153,17 @@ module.exports =
     report "Assertion: getStatic must work on #{inh}"
     return null
 
-  getDynamic: (inh) ->
-    op = inh[0] is '+'
-    name = inh.substr(1)
-    if (m = serviceModes.getDynamicMode op, name)?
-      @modes[inh] = inherited: m
-      return @resolve inh
-    if (m = dynamicModes.getDynamicMode op, name)?
-      @modes[inh] = inherited: m
-      return @resolve inh
-    if (m = regexModes.getDynamicMode op, name)?
-      @modes[inh] = inherited: m
-      return @resolve inh
-    report "Assertion: getDynamic must work on #{inh}"
+  getDynamic: (name) ->
+    if serviceModes.isValidMode name
+      @modes[name] = inherited: serviceModes.getDynamicMode name
+      return @resolve name
+    if dynamicModes.isValidMode name
+      @modes[name] = inherited: dynamicModes.getDynamicMode name
+      return @resolve name
+    if regexModes.isValidMode name
+      @modes[name] = inherited: regexModes.getDynamicMode name
+      return @resolve name
+    report "Assertion: getDynamic must work on #{name}"
     return null
 
   getSpecial: (inh) ->
@@ -175,26 +186,34 @@ module.exports =
 
   getName: (name) ->
     return name if (typeof name) is 'string'
-    md5.update(JSON.stringify(name))
+    md5 = crypto.createHash('md5')
+    md5.update(JSON.stringify(name), 'utf8')
     md5.digest('hex')
 
   merge: (dest, source) ->
-    return dest.keymap if source is '!all'
-    return dest if source is null
-    _.deepExtend dest.keymap, source.keymap
-    return unless dest? and source?
+    return unless dest?
+    return unless source?
+    return if source is '!all'
+    dest.keymap = {} unless dest.keymap?
+    if source.keymap?
+      for selector in Object.keys(source.keymap)
+        if dest.keymap[selector]?
+          for key in Object.keys(source.keymap[selector])
+            continue if dest.keymap[selector][key]?
+            dest.keymap[selector][key] = source.keymap[selector][key]
+        else
+          dest.keymap[selector] = _.clone source.keymap[selector]
     if dest.execute and source?.execute
       dest.execute = ((x, y) -> (r) -> x r; y r)(dest.execute, source.execute)
     else if source?.execute
       dest.execute = source.execute
 
   filter: (dest, source) ->
-    return dest if source is '!all'
-    dest.keymap = _.pick dest.keymap, (v, k) ->
+    return if source is '!all'
+    dest.keymap = pick dest.keymap, (k) ->
       return false unless source.keymap[k]?
-      dest.keymap[k] = _.pick dest.keymap[k], (v, k2) ->
-        return false unless source.keymap[k][k2]?
-        return true
+      dest.keymap[k] = pick dest.keymap[k], (k2) ->
+        return source.keymap[k][k2]?
       return true
 
   _getCombined: (inh) ->
@@ -210,7 +229,7 @@ module.exports =
     if op is '&'
       return [a, b]
     else
-      return [a, '+', b]
+      return ['!all', a, b]
 
   dryRun: (name) ->
     mode = @modes[name]

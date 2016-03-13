@@ -22,9 +22,9 @@ describe 'Mode Provider - Regular Expressions', ->
 
   describe 'Test getDynamicMode', ->
     it 'simple matching', ->
-      expect(modes.getDynamicMode '+k/^ctrl-/').toEqual ['!+', 'key', '^ctrl-', undefined]
+      expect(modes.getDynamicMode '+k/^ctrl-/').toEqual [['!+', 'key', '^ctrl-', undefined]]
     it 'simple replace', ->
-      expect(modes.getDynamicMode '+k/^ctrl-//').toEqual ['!+', 'key', '^ctrl-', '']
+      expect(modes.getDynamicMode '+k/^ctrl-//').toEqual [['!+', 'key', '^ctrl-', '']]
 
   describe 'Test getSpecial', ->
     it '+match', ->

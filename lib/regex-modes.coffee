@@ -30,7 +30,7 @@ module.exports =
       substitute = n[1]
       name = name.substr(n[1].length + 1)
     if name is ''
-      return ['!' + action, operation, match, substitute]
+      return [['!' + action, operation, match, substitute]]
     else
       return null
 
@@ -43,7 +43,7 @@ module.exports =
     keymap = {}
     matching_regex = new RegExp(match)
     for keybinding in atom.keymaps.getKeyBindings()
-      if substitute
+      if substitute?
         matched = false
         n = keybinding[operator].replace matching_regex, (match, m..., offset, string) ->
           matched = true
