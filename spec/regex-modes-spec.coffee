@@ -1,5 +1,10 @@
 modes = require '../lib/regex-modes'
 
+getKeyBindings = ->
+  atom.keymaps.getKeyBindings()
+
+sobj = {getKeyBindings, no_filter: false}
+
 describe 'Mode Provider - Regular Expressions', ->
 
   beforeEach ->
@@ -28,25 +33,25 @@ describe 'Mode Provider - Regular Expressions', ->
 
   describe 'Test getSpecial', ->
     it '+match', ->
-      expect(modes.getSpecial ['!+', 'key', '^home$']).toEqual [
+      expect(modes.getSpecial ['!+', 'key', '^home$'], sobj).toEqual [
         keymap:
           'atom-text-editor':
             'home': 'editor:move-to-first-character-of-line'
       ]
     it '-match', ->
-      expect(modes.getSpecial ['!-', 'key', '^home$']).toEqual [
+      expect(modes.getSpecial ['!-', 'key', '^home$'], sobj).toEqual [
         keymap:
           'atom-text-editor':
             'home': 'unset!'
       ]
     it '+replace', ->
-      expect(modes.getSpecial ['!+', 'key', '^(.+?) up', 'ctrl-u $1']).toEqual [
+      expect(modes.getSpecial ['!+', 'key', '^(.+?) up', 'ctrl-u $1'], sobj).toEqual [
         keymap:
           'body':
             'ctrl-u ctrl-k': 'pane:split-up'
       ]
     it '-replace', ->
-      expect(modes.getSpecial ['!-', 'key', '^(.+?) up', 'ctrl-u $1']).toEqual [
+      expect(modes.getSpecial ['!-', 'key', '^(.+?) up', 'ctrl-u $1'], sobj).toEqual [
         keymap:
           'body':
             'ctrl-k up': 'unset!'

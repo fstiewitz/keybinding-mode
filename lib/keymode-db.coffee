@@ -18,6 +18,41 @@ pick = (o, f) ->
     r[k] = o[k] if f(k)
   return r
 
+merge = (dest, source) ->
+  return unless dest?
+  return unless source?
+  return if source is '!all'
+  dest.keymap = {} unless dest.keymap?
+  if source.keymap?
+    for selector in Object.keys(source.keymap)
+      if dest.keymap[selector]?
+        for key in Object.keys(source.keymap[selector])
+          continue if dest.keymap[selector][key]?
+          dest.keymap[selector][key] = source.keymap[selector][key]
+      else
+        dest.keymap[selector] = _.clone source.keymap[selector]
+  if dest.execute and source?.execute
+    dest.execute = ((x, y) -> (r) -> x r; y r)(dest.execute, source.execute)
+  else if source?.execute
+    dest.execute = source.execute
+
+filter = (dest, source) ->
+  return if source is '!all'
+  dest = pick dest, (k) ->
+    return false unless source.keymap[k]?
+    dest[k] = pick dest[k], (k2) ->
+      return source.keymap[k][k2]?
+    return true
+
+getKeyBindings = ->
+  return atom.keymaps.getKeyBindings() if @source is '!all'
+  keymap = @source.keymap
+  r = []
+  for selector in Object.keys keymap
+    for keystrokes in Object.keys keymap[selector]
+      r.push {selector, keystrokes, command: keymap[selector][keystrokes]}
+  r
+
 module.exports =
   modes: {} # Stores keybinding modes
   mode_subscription: null # Stores atom.commands.add bindings
@@ -26,6 +61,9 @@ module.exports =
   emitter: null
 
   activate: ->
+    if atom.inSpecMode()
+      @merge = merge
+      @filter = filter
     @emitter = new Emitter
     dynamicModes.activate?()
     regexModes.activate()
@@ -107,114 +145,91 @@ module.exports =
     return unless @dryRun name
     return @_resolve name
 
-  resolve: (name) ->
+  resolve: (name, sobj) ->
     return @modes[name] if @modes[name]?.resolved
-    return @_resolve name
+    return @_resolve name, sobj
 
-  _resolve: (name) ->
+  _resolve: (name, _sobj) ->
     inh = @modes[name].inherited.slice()
     if inh.length > 1
-      source = @getSource inh.shift()
+      source = @getSource inh.shift(), _sobj
+    else if _sobj?
+      source = _sobj.source
     else
       source = '!all'
     for i in inh
+      sobj = {source, getKeyBindings, filter, merge, no_filter: false}
       if (typeof i) is 'string'
         if @isStatic i
-          m = @getStatic i
+          m = @getStatic i, sobj
         else
-          m = @getDynamic i
+          m = @getDynamic i, sobj
       else if i instanceof Array
         if @isSpecial i
-          m = @getSpecial i
+          m = @getSpecial i, sobj
         else if @isCombined i
-          m = @getCombined i
+          m = @getCombined i, sobj
         else
-          m = @process i
+          m = @process i, sobj
       else
         m = i
-      @filter m, source
-      @merge @modes[name], m
+      filter m.keymap, source unless sobj.no_filter
+      merge @modes[name], m
     return @modes[name]
 
-  getSource: (inh) ->
+  getSource: (inh, sobj) ->
     return inh if inh is '!all'
     name = @getName inh
     @modes[name] ?= inherited: [inh]
-    @resolve name
+    @resolve name, sobj
 
   isStatic: (inh) ->
     return not /^[!+-]/.test inh[0]
 
-  getStatic: (inh) ->
+  getStatic: (inh, sobj) ->
     if (@modes[inh])?
-      return @resolve inh
-    if (@modes[inh] = serviceModes.getStaticMode inh)?
-      return @resolve inh
+      return @resolve inh, sobj
+    if (@modes[inh] = serviceModes.getStaticMode inh, sobj)?
+      return @resolve inh, sobj
     report "Assertion: getStatic must work on #{inh}"
     return null
 
-  getDynamic: (name) ->
+  getDynamic: (name, sobj) ->
     if serviceModes.isValidMode name
-      @modes[name] = inherited: serviceModes.getDynamicMode name
-      return @resolve name
+      @modes[name] = inherited: serviceModes.getDynamicMode name, sobj
+      return @resolve name, sobj
     if dynamicModes.isValidMode name
-      @modes[name] = inherited: dynamicModes.getDynamicMode name
-      return @resolve name
+      @modes[name] = inherited: dynamicModes.getDynamicMode name, sobj
+      return @resolve name, sobj
     if regexModes.isValidMode name
-      @modes[name] = inherited: regexModes.getDynamicMode name
-      return @resolve name
+      @modes[name] = inherited: regexModes.getDynamicMode name, sobj
+      return @resolve name, sobj
     report "Assertion: getDynamic must work on #{name}"
     return null
 
-  getSpecial: (inh) ->
+  getSpecial: (inh, sobj) ->
     name = @getName inh
-    if (m = regexModes.getSpecial inh)?
+    if (m = regexModes.getSpecial inh, sobj)?
       @modes[name] = inherited: m
-      return @resolve name
+      return @resolve name, sobj
     report "Assertion: getSpecial must work on #{inh}"
     return null
 
-  getCombined: (inh) ->
+  getCombined: (inh, sobj) ->
     name = @getName inh
     @modes[name] = inherited: @_getCombined(inh.slice())
-    @resolve name
+    @resolve name, sobj
 
-  process: (inh) ->
+  process: (inh, sobj) ->
     name = @getName inh
     @modes[name] = inherited: inh
-    @resolve name
+    @resolve name, sobj
 
   getName: (name) ->
     return name if (typeof name) is 'string'
     md5 = crypto.createHash('md5')
     md5.update(JSON.stringify(name), 'utf8')
     md5.digest('hex')
-
-  merge: (dest, source) ->
-    return unless dest?
-    return unless source?
-    return if source is '!all'
-    dest.keymap = {} unless dest.keymap?
-    if source.keymap?
-      for selector in Object.keys(source.keymap)
-        if dest.keymap[selector]?
-          for key in Object.keys(source.keymap[selector])
-            continue if dest.keymap[selector][key]?
-            dest.keymap[selector][key] = source.keymap[selector][key]
-        else
-          dest.keymap[selector] = _.clone source.keymap[selector]
-    if dest.execute and source?.execute
-      dest.execute = ((x, y) -> (r) -> x r; y r)(dest.execute, source.execute)
-    else if source?.execute
-      dest.execute = source.execute
-
-  filter: (dest, source) ->
-    return if source is '!all'
-    dest.keymap = pick dest.keymap, (k) ->
-      return false unless source.keymap[k]?
-      dest.keymap[k] = pick dest.keymap[k], (k2) ->
-        return source.keymap[k][k2]?
-      return true
 
   _getCombined: (inh) ->
     a = inh.shift()

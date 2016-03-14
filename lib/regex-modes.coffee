@@ -8,6 +8,12 @@ operators = {
   s: 'selector'
 }
 
+clone = (o) ->
+  r = {}
+  for k in Object.keys(o)
+    r[k] = o[k]
+  r
+
 module.exports =
 
   activate: ->
@@ -34,7 +40,8 @@ module.exports =
     else
       return null
 
-  getSpecial: (inh) ->
+  getSpecial: (inh, source) ->
+    source.no_filter = true
     action = inh[0]
     operator = inh[1]
     operator = 'keystrokes' if operator is 'key'
@@ -42,7 +49,8 @@ module.exports =
     substitute = inh[3]
     keymap = {}
     matching_regex = new RegExp(match)
-    for keybinding in atom.keymaps.getKeyBindings()
+    for keybinding in source.getKeyBindings()
+      keybinding = clone keybinding
       if substitute?
         matched = false
         n = keybinding[operator].replace matching_regex, (match, m..., offset, string) ->

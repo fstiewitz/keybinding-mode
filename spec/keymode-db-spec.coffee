@@ -208,7 +208,7 @@ describe 'Keymode DB', ->
   describe '::filter', ->
     it 'source is !all', ->
       m = keymap: 1
-      db.filter m, '!all'
+      db.filter m.keymap, '!all'
       expect(m.keymap).toBe 1
     it 'both keymaps given', ->
       a = keymap:
@@ -220,7 +220,7 @@ describe 'Keymode DB', ->
           a: 1
           b: 2
           c: 2
-      db.filter b, a
+      db.filter b.keymap, a
       expect(b.keymap).toEqual
         a:
           a: 1
@@ -302,8 +302,9 @@ describe 'Keymode DB', ->
           'body':
             'ctrl-k up': 'foo:bar'
       ]
-      db.modes['test2'] = inherited: ['!all', ['-k/^ctrl-//', '&', '+k/^ctrl-8/']]
+      db.modes['test2'] = inherited: ['!all', ['-k/^ctrl-//', '&', '+k/ctrl-8/']]
       m = db.resolve 'test2'
       expect(m.keymap).toEqual
-        'body':
-          'ctrl-k up': 'foo:bar'
+        'atom-workspace atom-text-editor:not([mini])':
+          'ctrl-k ctrl-8': 'unset!'
+          'k ctrl-8': 'editor:fold-at-indent-level-8'
