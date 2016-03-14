@@ -297,13 +297,37 @@ describe 'Keymode DB', ->
           'ctrl-k up': 'unset!'
           'ctrl-u ctrl-k': 'pane:split-up'
     it 'combined filter (regular expression + import)', ->
+      db.modes['test1'] = inherited: ['!all', ['-k/^ctrl-//', '&', '+k/ctrl-8/']]
+      m = db.resolve 'test1'
+      expect(m.keymap).toEqual
+        'atom-workspace atom-text-editor:not([mini])':
+          'ctrl-k ctrl-8': 'unset!'
+          'k ctrl-8': 'editor:fold-at-indent-level-8'
+
+    it 'plus and replace', ->
       db.modes['test1'] = inherited: [
-        keymap:
-          'body':
-            'ctrl-k up': 'foo:bar'
+        '!all'
+        [
+          '+k/ctrl-8/'
+          '+'
+          '+k/^ctrl-//'
+        ]
       ]
-      db.modes['test2'] = inherited: ['!all', ['-k/^ctrl-//', '&', '+k/ctrl-8/']]
-      m = db.resolve 'test2'
+      m = db.resolve 'test1'
+      expect(m.keymap).toEqual
+        'atom-workspace atom-text-editor:not([mini])':
+          'ctrl-k ctrl-8': 'editor:fold-at-indent-level-8'
+          'k ctrl-8': 'editor:fold-at-indent-level-8'
+    it 'minus and replace', ->
+      db.modes['test1'] = inherited: [
+        '!all'
+        [
+          '+k/ctrl-8/'
+          '-'
+          '+k/^ctrl-//'
+        ]
+      ]
+      m = db.resolve 'test1'
       expect(m.keymap).toEqual
         'atom-workspace atom-text-editor:not([mini])':
           'ctrl-k ctrl-8': 'unset!'

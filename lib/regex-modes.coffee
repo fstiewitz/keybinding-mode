@@ -22,7 +22,8 @@ module.exports =
   deactivate: ->
     @regex_cache = null
 
-  getDynamicMode: (name) ->
+  getDynamicMode: (name, source) ->
+    source.no_filter = true
     unless (m = /^([+-])([cks])(.)/.exec name)?
       return null
     action = m[1]
@@ -72,7 +73,7 @@ module.exports =
             keymap[keybinding.selector][keybinding.keystrokes] = keybinding.command
           else
             keymap[keybinding.selector][keybinding.keystrokes] = 'unset!'
-    return [keymap: keymap]
+    return ['!all', keymap: keymap]
 
   isValidMode: (name) ->
     unless (m = /^([+-])([cks])(.)/.exec name)?
@@ -92,7 +93,7 @@ module.exports =
 
   isSpecial: (inh) ->
     return false if inh.length < 3
-    return false unless inh[1] in ['key', 'selector', 'command', 'source']
+    return false unless inh[1] in ['key', 'selector', 'command']
     return false unless typeof inh[2] is 'string'
     return false if inh[3]? and typeof inh[3] isnt 'string'
     return true

@@ -53,6 +53,20 @@ getKeyBindings = ->
       r.push {selector, keystrokes, command: keymap[selector][keystrokes]}
   r
 
+plusKeymap = (sobj) ->
+  keymap = {}
+  for keybinding in sobj.getKeyBindings()
+    keymap[keybinding.selector] ?= {}
+    keymap[keybinding.selector][keybinding.keystrokes] = keybinding.command
+  return {keymap}
+
+minusKeymap = (sobj) ->
+  keymap = {}
+  for keybinding in sobj.getKeyBindings()
+    keymap[keybinding.selector] ?= {}
+    keymap[keybinding.selector][keybinding.keystrokes] = 'unset!'
+  return {keymap}
+
 module.exports =
   modes: {} # Stores keybinding modes
   mode_subscription: null # Stores atom.commands.add bindings
@@ -195,6 +209,8 @@ module.exports =
     return null
 
   getDynamic: (name, sobj) ->
+    return plusKeymap(sobj) if name is '+'
+    return minusKeymap(sobj) if name is '-'
     if serviceModes.isValidMode name
       @modes[name] = inherited: serviceModes.getDynamicMode name, sobj
       return @resolve name, sobj

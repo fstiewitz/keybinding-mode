@@ -27,31 +27,35 @@ describe 'Mode Provider - Regular Expressions', ->
 
   describe 'Test getDynamicMode', ->
     it 'simple matching', ->
-      expect(modes.getDynamicMode '+k/^ctrl-/').toEqual [['!+', 'key', '^ctrl-', undefined]]
+      expect(modes.getDynamicMode '+k/^ctrl-/', sobj).toEqual [['!+', 'key', '^ctrl-', undefined]]
     it 'simple replace', ->
-      expect(modes.getDynamicMode '+k/^ctrl-//').toEqual [['!+', 'key', '^ctrl-', '']]
+      expect(modes.getDynamicMode '+k/^ctrl-//', sobj).toEqual [['!+', 'key', '^ctrl-', '']]
 
   describe 'Test getSpecial', ->
     it '+match', ->
       expect(modes.getSpecial ['!+', 'key', '^home$'], sobj).toEqual [
+        '!all'
         keymap:
           'atom-text-editor':
             'home': 'editor:move-to-first-character-of-line'
       ]
     it '-match', ->
       expect(modes.getSpecial ['!-', 'key', '^home$'], sobj).toEqual [
+        '!all'
         keymap:
           'atom-text-editor':
             'home': 'unset!'
       ]
     it '+replace', ->
       expect(modes.getSpecial ['!+', 'key', '^(.+?) up', 'ctrl-u $1'], sobj).toEqual [
+        '!all'
         keymap:
           'body':
             'ctrl-u ctrl-k': 'pane:split-up'
       ]
     it '-replace', ->
       expect(modes.getSpecial ['!-', 'key', '^(.+?) up', 'ctrl-u $1'], sobj).toEqual [
+        '!all'
         keymap:
           'body':
             'ctrl-k up': 'unset!'
