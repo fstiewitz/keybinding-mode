@@ -6,6 +6,11 @@ serviceModes = require './service-modes'
 
 crypto = require('crypto')
 
+path = require 'path'
+fs = require 'fs'
+
+CSON = require 'season'
+
 _ = require('underscore-plus')
 
 report = (msg) ->
@@ -38,9 +43,9 @@ merge = (dest, source) ->
 
 filter = (dest, source) ->
   return if source is '!all'
-  dest = pick dest, (k) ->
+  dest.keymap = pick dest.keymap, (k) ->
     return false unless source.keymap[k]?
-    dest[k] = pick dest[k], (k2) ->
+    dest.keymap[k] = pick dest.keymap[k], (k2) ->
       return source.keymap[k][k2]?
     return true
 
@@ -106,29 +111,34 @@ module.exports =
   onActivate: (cb) ->
     @emitter.on 'activate', cb
 
-  reload: ->
-    filepath = path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode.cson')
-    fs.exists filepath, (exists) =>
-      return console.log "#{filepath} does not exist and this package is useless without it" unless exists
-      CSON.readFile filepath, (error, contents) =>
-        if error?
-          atom.notifications?.addError 'Could not read ' + filepath
-          return
-        @mode_subscription?.dispose()
-        command_map = {}
-        for mode in Object.keys contents
-          if contents[mode] instanceof Array
-            contents[mode].splice(0, 0, '!all')
-          else
-            contents[mode] = ['!all', contents[mode]]
-          @modes[mode] =
-            inherited: contents[mode]
-            resolved: false
-            execute: null
-            keymap: null
-          command_map['keybinding-mode:' + mode] = ((_this, name) -> -> _this.toggleKeymap(name))(this, mode)
-        @mode_subscription = atom.commands.add 'atom-workspace', command_map
-        @emitter.emit 'reload'
+  reload: (f) ->
+    filepath = f ? path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode.cson')
+    new Promise((resolve, reject) =>
+      fs.exists filepath, (exists) =>
+        return console.log "#{filepath} does not exist and this package is useless without it" unless exists
+        CSON.readFile filepath, (error, contents) =>
+          if error?
+            report 'Could not read ' + filepath
+            reject 'Could not read ' + filepath
+            return
+          @mode_subscription?.dispose()
+          @modes = {}
+          command_map = {}
+          for mode in Object.keys contents
+            if contents[mode] instanceof Array
+              contents[mode].splice(0, 0, '!all')
+            else
+              contents[mode] = ['!all', contents[mode]]
+            @modes[mode] =
+              inherited: contents[mode]
+              resolved: false
+              execute: null
+              keymap: null
+            command_map['keybinding-mode:' + mode] = ((_this, name) -> -> _this.toggleKeymap(name))(this, mode)
+          @mode_subscription = atom.commands.add 'atom-workspace', command_map
+          @emitter.emit 'reload'
+          resolve()
+    )
 
   toggleKeymap: (name) ->
     if name is @current_keymap
@@ -187,7 +197,7 @@ module.exports =
           m = @process i, sobj
       else
         m = i
-      filter m.keymap, source unless sobj.no_filter
+      filter m, source unless sobj.no_filter
       merge @modes[name], m
     return @modes[name]
 
