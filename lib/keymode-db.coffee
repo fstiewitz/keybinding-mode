@@ -13,6 +13,9 @@ CSON = require 'season'
 
 _ = require('underscore-plus')
 
+debug = (type, obj) ->
+  console.log {type, obj} if atom.config.get('keybinding-mode.debugger')
+
 report = (msg) ->
   atom.notifications?.addError msg
   console.log msg
@@ -32,7 +35,6 @@ merge = (dest, source) ->
     for selector in Object.keys(source.keymap)
       if dest.keymap[selector]?
         for key in Object.keys(source.keymap[selector])
-          continue if dest.keymap[selector][key]?
           dest.keymap[selector][key] = source.keymap[selector][key]
       else
         dest.keymap[selector] = _.clone source.keymap[selector]
@@ -59,6 +61,7 @@ getKeyBindings = ->
   r
 
 plusKeymap = (sobj) ->
+  sobj.no_filter = true
   keymap = {}
   for keybinding in sobj.getKeyBindings()
     keymap[keybinding.selector] ?= {}
@@ -66,6 +69,7 @@ plusKeymap = (sobj) ->
   return {keymap}
 
 minusKeymap = (sobj) ->
+  sobj.no_filter = true
   keymap = {}
   for keybinding in sobj.getKeyBindings()
     keymap[keybinding.selector] ?= {}
@@ -84,7 +88,6 @@ module.exports =
       @merge = merge
       @filter = filter
     @emitter = new Emitter
-    dynamicModes.activate?()
     regexModes.activate()
     serviceModes.activate()
 
@@ -93,10 +96,9 @@ module.exports =
     @mode_subscription?.dispose()
     @mode_subscription = null
     @deactivateKeymap @current_keymap if @current_keymap?
-    dynamicModes.deactivate?()
     regexModes.deactivate()
     serviceModes.deactivate()
-    @emitter.dispose()
+    @emitter?.dispose()
     @emitter = null
 
   onReload: (cb) ->
@@ -115,9 +117,9 @@ module.exports =
     filepath = f ? path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode.cson')
     new Promise((resolve, reject) =>
       fs.exists filepath, (exists) =>
-        return console.log "#{filepath} does not exist and this package is useless without it" unless exists
+        return unless exists
         CSON.readFile filepath, (error, contents) =>
-          if error?
+          if error? or not contents?
             report 'Could not read ' + filepath
             reject 'Could not read ' + filepath
             return
@@ -141,33 +143,55 @@ module.exports =
     )
 
   toggleKeymap: (name) ->
+    if atom.config.get('keybinding-mode.debugger')
+      @resolveWithTest name
+      return
     if name is @current_keymap
       @deactivateKeymap name
     else
       @deactivateKeymap @current_keymap if @current_keymap?
       @activateKeymap name
-    @emitter.emit 'toggle', name
+      @emitter.emit 'toggle', name
 
   deactivateKeymap: (name) ->
     @current_keymap = null
     @key_subscription?.dispose()
     mode = @resolveWithTest(name)
     return unless mode?
-    mode.execute true
+    mode.execute?(true)
     @emitter.emit 'deactivate', name
 
   activateKeymap: (name) ->
     @current_keymap = name
     mode = @resolveWithTest(name)
     return unless mode?
-    mode.execute()
+    mode.execute?()
     @key_subscription = atom.keymaps.add 'keybinding-mode:' + name, mode.keymap
     @emitter.emit 'activate', name
 
   resolveWithTest: (name) ->
     return @modes[name] if @modes[name]?.resolved
     return unless @dryRun name
-    return @_resolve name
+    m = @diff(@_resolve name)
+    if atom.config.get('keybinding-mode.debugger')
+      CSON.writeFileSync path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode-dump.cson'), m.keymap
+    return m
+
+  diff: (mode) ->
+    m = mode.keymap
+    all = {}
+    for {selector, keystrokes, command} in atom.keymaps.getKeyBindings()
+      all[selector] ?= {}
+      all[selector][keystrokes] = command
+
+    for s in Object.keys m
+      selector = m[s]
+      for k in Object.keys selector
+        exists = all[s]?[k]?
+        if ((not exists) and s isnt '*' and selector[k] is 'unset!') or all[s]?[k] is selector[k]
+          delete selector[k]
+
+    return mode
 
   resolve: (name, sobj) ->
     return @modes[name] if @modes[name]?.resolved
@@ -181,6 +205,8 @@ module.exports =
       source = _sobj.source
     else
       source = '!all'
+    debug 'source', source
+    debug 'inh', inh
     for i in inh
       sobj = {source, getKeyBindings, filter, merge, no_filter: false}
       if (typeof i) is 'string'
@@ -197,8 +223,14 @@ module.exports =
           m = @process i, sobj
       else
         m = i
-      filter m, source unless sobj.no_filter
+      debug 'pre-filter', {i, m}
+      unless sobj.no_filter
+        filter m, source
+        debug 'post-filter', m
+      else
+        debug 'no-filter', m
       merge @modes[name], m
+      debug 'post-merge', {mode: @modes[name], m}
     return @modes[name]
 
   getSource: (inh, sobj) ->
@@ -242,11 +274,13 @@ module.exports =
     return null
 
   getCombined: (inh, sobj) ->
+    sobj.no_filter = true
     name = @getName inh
     @modes[name] = inherited: @_getCombined(inh.slice())
     @resolve name, sobj
 
   process: (inh, sobj) ->
+    sobj.no_filter = true
     name = @getName inh
     @modes[name] = inherited: inh
     @resolve name, sobj

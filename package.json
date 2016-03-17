@@ -14,6 +14,14 @@
     "season": "^5.2.0",
     "underscore-plus": "^1.0.0"
   },
+  "configSchema": {
+    "debugger": {
+      "type": "boolean",
+      "default": "false",
+      "title": "Enable Debugging",
+      "description": "Debug keybinding modes by dumping every step on console"
+    }
+  },
   "consumedServices": {
     "status-bar": {
       "versions": {

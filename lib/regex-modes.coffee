@@ -75,19 +75,20 @@ module.exports =
             keymap[keybinding.selector][keybinding.keystrokes] = 'unset!'
     return ['!all', keymap: keymap]
 
-  isValidMode: (name) ->
+  isValidMode: (_name) ->
+    name = _name
     unless (m = /^([+-])([cks])(.)/.exec name)?
-      report "Couldn't match regex start #{name}"
+      report "Couldn't match regex start #{name} in #{_name}"
       return false
     name = name.substr(3)
     unless (n = (r = @getRegexWithSeparator(m[3])).exec name)?
-      report "Couldn't match regex body #{name}"
+      report "Couldn't match regex body #{name} in #{_name}"
       return false
     name = name.substr(n[1].length + 1)
     if (n = r.exec name)?
       name = name.substr(n[1].length + 1)
     unless name is ''
-      report "Couldn't match substitution regex #{name}"
+      report "Couldn't match substitution regex #{name} in #{_name}"
       return false
     return true
 

@@ -98,19 +98,28 @@ module.exports =
     return [keymap: keys]
 
   'lower': ->
-    keys = 'atom-text-editor:not(.mini)': {}
+    keys =
+      '*': {}
+      'atom-workspace atom-text-editor[mini]': {}
     for key in 'abcdefghijklmnopqrstuvwxyz'.split('')
-      keys['atom-text-editor:not(.mini)'][key] = 'abort!'
+      keys['*'][key] = 'unset!'
+      keys['atom-workspace atom-text-editor[mini]'][key] = 'native!'
     return [keymap: keys]
 
   'upper': ->
-    keys = 'atom-text-editor:not(.mini)': {}
+    keys =
+      '*': {}
+      'atom-workspace atom-text-editor[mini]': {}
     for key in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
-      keys['atom-text-editor:not(.mini)'][key] = 'abort!'
+      keys['*'][key] = 'unset!'
+      keys['atom-workspace atom-text-editor[mini]'][key] = 'native!'
     return [keymap: keys]
 
   'numbers': ->
-    keys = 'atom-text-editor:not(.mini)': {}
+    keys =
+      '*': {}
+      'atom-workspace atom-text-editor[mini]': {}
     for key in [0..9]
-      keys['atom-text-editor:not(.mini)'][key + ''] = 'abort!'
+      keys['*'][key] = 'unset!'
+      keys['atom-workspace atom-text-editor[mini]'][key] = 'native!'
     return [keymap: keys]
