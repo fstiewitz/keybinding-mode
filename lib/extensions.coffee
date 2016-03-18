@@ -44,43 +44,41 @@ module.exports =
       dynamic: []
       special: []
       all: []
-    s = 0
-    d = 0
-    sp = 0
-    a = 0
-    for extension in extensions
+    for e in Object.keys(extensions)
+      extension = extensions[e]
+
+      unless extension.getStaticMode? or extension.getDynamicMode? or extension.getSpecial?
+        report "Extension #{e} provides nothing"
+        continue
+
       unless extension.isValidMode?
-        report 'Extension must provide ::isValidMode(name)'
+        report "Extension #{e} must provide ::isValidMode(name)"
         continue
 
       if extension.getSpecial?
         unless extension.isSpecial?
-          report 'Extension must provide ::isSpecial(inh)'
+          report "Extension #{e} must provide ::isSpecial(inh)"
           continue
 
       if extension.getStaticMode? and extension.getDynamicMode?
         unless extension.isStaticMode?
-          report 'Extension must provide ::isStaticMode(name)'
+          report "Extension #{e} must provide ::isStaticMode(name)"
           continue
       else if extension.getStaticMode?
         extension.isStaticMode = -> true
       else if extension.getDynamicMode?
         extension.isStaticMode = -> false
 
-      r.all.push name + a
-      a = a + 1
+      r.all.push e
       if extension.getStaticMode?
-        r.static.push name + s
-        @static_ext[name + s] = extension
-        s = s + 1
+        r.static.push e
+        @static_ext[e] = extension
       if extension.getDynamicMode?
-        r.dynamic.push name + d
-        @dynamic_ext[name + d] = extension
-        d = d + 1
+        r.dynamic.push e
+        @dynamic_ext[e] = extension
       if extension.getSpecial?
-        r.special.push name + sp
-        @special_ext[name + sp] = extension
-        sp = sp + 1
+        r.special.push e
+        @special_ext[e] = extension
 
     @extensions[name] = r
     new Disposable(=> @remove(name))
@@ -91,6 +89,9 @@ module.exports =
       if (m = @static_ext[k].getStaticMode inh, sobj)?
         return m
     return null
+
+  getStaticNames: ->
+    return Object.keys(@static_ext)
 
   getDynamic: (inh, sobj) ->
     for k in Object.keys(@dynamic_ext)

@@ -62,6 +62,9 @@ module.exports =
     sobj.is_static = true
     return @smodes[name] if @smodes[name]?
 
+  getStaticNames: ->
+    return Object.keys(@smodes)
+
   getDynamicMode: (name, sobj) ->
     _name = name.substr(1)
     return @dmodes[_name](name[0] is '+', sobj) if @dmodes[_name]?

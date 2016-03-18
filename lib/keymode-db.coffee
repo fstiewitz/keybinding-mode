@@ -117,6 +117,7 @@ module.exports =
     @emitter.on 'activate', cb
 
   reload: (f) ->
+    @deactivateKeymap(@current_keymap) if @current_keymap?
     filepath = f ? path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode.cson')
     new Promise((resolve, reject) =>
       fs.exists filepath, (exists) =>
@@ -202,6 +203,7 @@ module.exports =
 
   _resolve: (name, _sobj) ->
     inh = @modes[name].inherited.slice()
+    inh = @replacePatterns inh, name
     _sobj ?= {}
     _sobj.is_static = false
     if inh.length > 1
@@ -297,6 +299,21 @@ module.exports =
     @modes[name] = inherited: @_getCombined(inh.slice())
     @resolve name, sobj
 
+  replacePatterns: (mode, name) ->
+    m = []
+    for inh in mode
+      if @isPattern inh
+        m = m.concat @getStaticModes inh, name
+      else
+        m.push inh
+    return m
+
+  getStaticModes: (inh, name) ->
+    if inh is '~'
+      inh = "~^#{name}_"
+    r = new RegExp(inh.substr(1))
+    return (mode for mode in @getStaticNames() when r.test(mode) and mode isnt name)
+
   process: (inh, sobj) ->
     sobj.no_filter = true
     name = @getName inh
@@ -323,6 +340,13 @@ module.exports =
       return [a, b]
     else
       return ['!all', a, b]
+
+  getStaticNames: ->
+    modes = {}
+    modes[k] = true for k in Object.keys(@modes)
+    modes[k] = true for k in extensions.getStaticNames()
+    modes[k] = true for k in serviceModes.getStaticNames()
+    return Object.keys(modes)
 
   dryRun: (name) ->
     mode = @modes[name]
@@ -357,8 +381,12 @@ module.exports =
   isSpecial: (inh) ->
     return (typeof inh[0]) is 'string' and inh[0][0] is '!' and inh[0] isnt '!all'
 
+  isPattern: (inh) ->
+    return (typeof inh) is 'string' and inh[0] is '~'
+
   validMode: (name) ->
     return true if name is '!all'
+    return true if @isPattern name
     return true if @modes[name]?
     return true if extensions.isValidMode name
     return true if serviceModes.isValidMode name
