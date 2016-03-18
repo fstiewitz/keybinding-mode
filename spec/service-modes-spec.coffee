@@ -34,3 +34,21 @@ describe 'Mode Provider - Service', ->
       expect(modes.isValidMode '+mode2').toBe true
     it 'invalid', ->
       expect(modes.isValidMode 'foobar').toBe false
+
+  describe 'Test getStaticMode', ->
+    it 'valid static', ->
+      expect(modes.getStaticMode 'mode1').toEqual
+        keymap:
+          'atom-text-editor':
+            'ctrl-k': 'foo'
+    it 'invalid static', ->
+      expect(modes.getStaticMode 'mode2').toBeUndefined()
+
+  describe 'Test getDynamicMode', ->
+    it 'valid dynamic', ->
+      expect(modes.getDynamicMode '+mode2').toEqual
+        keymap:
+          'atom-text-editor':
+            'ctrl-k': 'foo'
+    it 'invalid dynamic', ->
+      expect(modes.getDynamicMode '+mode3').toBeUndefined()

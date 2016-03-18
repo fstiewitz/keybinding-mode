@@ -21,6 +21,7 @@ module.exports =
     return unless @consumed[name]?
     @smodes[mode] = null for mode in @consumed[name].smodes
     @dmodes[mode] = null for mode in @consumed[name].dmodes
+    delete @consumed[name]
 
   consume: ({name, modes}) ->
     unless name?
@@ -62,7 +63,7 @@ module.exports =
 
   getDynamicMode: (name) ->
     _name = name.substr(1)
-    return @dmodes[_name] if @dmodes[_name]?
+    return @dmodes[_name](name[0] is '+') if @dmodes[_name]?
 
   isStaticMode: (name) ->
     return @smodes[name]?
