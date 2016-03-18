@@ -51,7 +51,7 @@ describe 'Mode Provider - Regular Expressions', ->
         '!all'
         keymap:
           'body':
-            'ctrl-u ctrl-k': 'pane:split-up'
+            'ctrl-u ctrl-k': 'pane:split-up-and-copy-active-item'
       ]
     it '-replace', ->
       expect(modes.getSpecial ['!-', 'key', '^(.+?) up', 'ctrl-u $1'], sobj).toEqual [
@@ -59,7 +59,7 @@ describe 'Mode Provider - Regular Expressions', ->
         keymap:
           'body':
             'ctrl-k up': 'unset!'
-            'ctrl-u ctrl-k': 'pane:split-up'
+            'ctrl-u ctrl-k': 'pane:split-up-and-copy-active-item'
       ]
 
   describe 'Test isSpecial', ->
