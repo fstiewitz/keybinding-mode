@@ -28,9 +28,14 @@
         "^1.0.0": "consumeStatusBar"
       }
     },
-    "keybinding-mode": {
+    "keybinding-mode.modes": {
       "versions": {
         "^1.0.0": "consumeKeybindingMode"
+      }
+    },
+    "keybinding-mode.extension": {
+      "versions": {
+        "^1.0.0": "consumeKeybindingExtension"
       }
     }
   }

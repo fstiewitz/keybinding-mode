@@ -1,5 +1,6 @@
 {Emitter} = require 'atom'
 
+extensions = require './extensions'
 dynamicModes = require './dynamic-modes'
 regexModes = require './regex-modes'
 serviceModes = require './service-modes'
@@ -88,6 +89,7 @@ module.exports =
       @merge = merge
       @filter = filter
     @emitter = new Emitter
+    extensions.activate()
     regexModes.activate()
     serviceModes.activate()
 
@@ -96,6 +98,7 @@ module.exports =
     @mode_subscription?.dispose()
     @mode_subscription = null
     @deactivateKeymap @current_keymap if @current_keymap?
+    extensions.deactivate()
     regexModes.deactivate()
     serviceModes.deactivate()
     @emitter?.dispose()
@@ -199,16 +202,19 @@ module.exports =
 
   _resolve: (name, _sobj) ->
     inh = @modes[name].inherited.slice()
+    _sobj ?= {}
+    _sobj.is_static = false
     if inh.length > 1
       source = @getSource inh.shift(), _sobj
-    else if _sobj?
+    else if _sobj.source?
       source = _sobj.source
     else
       source = '!all'
     debug 'source', source
     debug 'inh', inh
+    is_static = _sobj.is_static
     for i in inh
-      sobj = {source, getKeyBindings, filter, merge, no_filter: false}
+      sobj = {source, getKeyBindings, filter, merge, is_static: false, no_filter: false}
       if (typeof i) is 'string'
         if @isStatic i
           m = @getStatic i, sobj
@@ -222,7 +228,9 @@ module.exports =
         else
           m = @process i, sobj
       else
+        sobj.is_static = true if i?.keymap?
         m = i
+      is_static = true if sobj.is_static
       debug 'pre-filter', {i, m}
       unless sobj.no_filter
         filter m, source
@@ -231,6 +239,7 @@ module.exports =
         debug 'no-filter', m
       merge @modes[name], m
       debug 'post-merge', {mode: @modes[name], m}
+    @modes[name].resolved = is_static
     return @modes[name]
 
   getSource: (inh, sobj) ->
@@ -244,6 +253,9 @@ module.exports =
 
   getStatic: (inh, sobj) ->
     if (@modes[inh])?
+      sobj.is_static = true
+      return @resolve inh, sobj
+    if (@modes[inh] = extensions.getStatic inh, sobj)?
       return @resolve inh, sobj
     if (@modes[inh] = serviceModes.getStaticMode inh, sobj)?
       return @resolve inh, sobj
@@ -253,6 +265,9 @@ module.exports =
   getDynamic: (name, sobj) ->
     return plusKeymap(sobj) if name is '+'
     return minusKeymap(sobj) if name is '-'
+    if extensions.isValidMode name
+      @modes[name] = inherited: extensions.getDynamic name, sobj
+      return @resolve name, sobj
     if serviceModes.isValidMode name
       @modes[name] = inherited: serviceModes.getDynamicMode name, sobj
       return @resolve name, sobj
@@ -267,6 +282,9 @@ module.exports =
 
   getSpecial: (inh, sobj) ->
     name = @getName inh
+    if (m = extensions.getSpecial inh, sobj)?
+      @modes[name] = inherited: m
+      return @resolve name, sobj
     if (m = regexModes.getSpecial inh, sobj)?
       @modes[name] = inherited: m
       return @resolve name, sobj
@@ -342,12 +360,14 @@ module.exports =
   validMode: (name) ->
     return true if name is '!all'
     return true if @modes[name]?
+    return true if extensions.isValidMode name
     return true if serviceModes.isValidMode name
     return true if dynamicModes.isValidMode name
     return true if regexModes.isValidMode name
     return false
 
   validSpecial: (inh) ->
+    return true if extensions.isSpecial inh
     return true if regexModes.isSpecial inh
     report "#{inh} is not a valid special form"
     return false

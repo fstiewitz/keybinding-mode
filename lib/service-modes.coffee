@@ -58,12 +58,13 @@ module.exports =
     @consumed[name] = r
     new Disposable(=> @remove(name))
 
-  getStaticMode: (name) ->
+  getStaticMode: (name, sobj) ->
+    sobj.is_static = true
     return @smodes[name] if @smodes[name]?
 
-  getDynamicMode: (name) ->
+  getDynamicMode: (name, sobj) ->
     _name = name.substr(1)
-    return @dmodes[_name](name[0] is '+') if @dmodes[_name]?
+    return @dmodes[_name](name[0] is '+', sobj) if @dmodes[_name]?
 
   isStaticMode: (name) ->
     return @smodes[name]?

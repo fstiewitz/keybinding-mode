@@ -37,22 +37,21 @@ unctrl_fold: [
     '+k/^ctrl-//'
   ]
 ]
-say_whaaaat: [[
+say_whaaaat: [
   [
     [
       '!all'
       'dynamic_keymaps'
+      '+k/^ctrl-/'
       'simple_emacs'
-      ['!all', '+k/^ctrl-/']
+      '-k/^ctrl-k/'
+      [
+        ['+k/^alt-/', '&', '+c/^editor:/']
+        '-'
+        '+k/^alt-/ctrl-k /'
+      ]
     ]
     '+'
-    ['!all', '-k/^ctrl-k/']
-    [
-      [['!all', '&', '+k/^alt-/'], '&', '+c/^editor:/']
-      '-'
-      '+k/^alt-/ctrl-k /'
-    ]
+    '-k/^ctrl-//'
   ]
-  '+'
-  '-k/^ctrl-//'
-]]
+]
