@@ -89,11 +89,13 @@ module.exports =
       @merge = merge
       @filter = filter
     @emitter = new Emitter
-    extensions.activate()
+    extensions.activate(this)
     regexModes.activate()
-    serviceModes.activate()
+    serviceModes.activate(this)
+    @scheduledReload = null
 
   deactivate: ->
+    @scheduledReload = null
     @modes = {}
     @mode_subscription?.dispose()
     @mode_subscription = null
@@ -196,7 +198,8 @@ module.exports =
               resolved: false
               execute: null
               keymap: null
-            command_map['keybinding-mode:' + mode] = ((_this, name) -> -> _this.toggleKeymap(name))(this, mode)
+            if mode[0] isnt '.'
+              command_map['keybinding-mode:' + mode] = @getCommandFunction mode
           Promise.all(promises).then(=>
             if autostart?
               if autostart instanceof Array
@@ -213,6 +216,25 @@ module.exports =
             resolve()
           , reject)
     )
+
+  addCommands: (modes, ignore) ->
+    s = []
+    sn = @getStaticNames(ignore)
+    s.push mode for mode in modes when not sn[mode]? and mode[0] isnt '.'
+    command_map = {}
+    for mode in s
+      command_map['keybinding-mode:' + mode] = @getCommandFunction mode
+    return atom.commands.add 'atom-workspace', command_map
+
+  getCommandFunction: (mode) ->
+    ((_this, name) -> -> _this.toggleKeymap(name))(this, mode)
+
+  scheduleReload: ->
+    return if @scheduledReload?
+    @scheduledReload = setTimeout(=>
+      @scheduledReload = null
+      @reload()
+    , atom.config.get('keybinding-mode.delay') * 1000)
 
   resolveAutostart: ->
     new Promise((resolve, reject) =>
@@ -362,9 +384,9 @@ module.exports =
 
   getStaticModes: (inh, name) ->
     if inh is '~'
-      inh = "~^#{name}_"
+      inh = "~^\.?#{name}-"
     r = new RegExp(inh.substr(1))
-    return (mode for mode in @getStaticNames() when r.test(mode) and mode isnt name)
+    return (mode for mode in Object.keys(@getStaticNames()) when r.test(mode) and mode isnt name)
 
   process: (inh, sobj) ->
     sobj.no_filter = true
@@ -394,12 +416,12 @@ module.exports =
     else
       return ['!all', a, b]
 
-  getStaticNames: ->
+  getStaticNames: (ignore = 0) ->
     modes = {}
     modes[k] = true for k in Object.keys(@modes)
-    modes[k] = true for k in extensions.getStaticNames()
-    modes[k] = true for k in serviceModes.getStaticNames()
-    return Object.keys(modes)
+    modes[k] = true for k in extensions.getStaticNames() if ignore isnt 2
+    modes[k] = true for k in serviceModes.getStaticNames() if ignore isnt 1
+    return modes
 
   dryRun: (name) ->
     mode = @modes[name]

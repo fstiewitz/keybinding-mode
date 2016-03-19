@@ -418,12 +418,24 @@ describe 'Keymode DB', ->
       expect(db.modes.simple_emacs).toBeDefined()
       expect(db.modes.import_keymap).toBeDefined()
       expect(db.modes.dynamic_keymaps).toBeDefined()
-      expect(db.modes.german_layout).toBeDefined()
+      expect(db.modes['.german_layout']).toBeDefined()
       expect(db.modes.localize_emacs).toBeDefined()
       expect(db.modes.unctrl_all).toBeDefined()
       expect(db.modes.unctrl_fold).toBeDefined()
       expect(db.modes['my-a']).toBeDefined()
       expect(db.modes['my-b']).toBeDefined()
+
+    it 'loads commands', ->
+      m = atom.commands.getSnapshot()
+      expect(m['keybinding-mode:simple_emacs']).toBeDefined()
+      expect(m['keybinding-mode:import_keymap']).toBeDefined()
+      expect(m['keybinding-mode:dynamic_keymaps']).toBeDefined()
+      expect(m['keybinding-mode:localize_emacs']).toBeDefined()
+      expect(m['keybinding-mode:unctrl_all']).toBeDefined()
+      expect(m['keybinding-mode:unctrl_fold']).toBeDefined()
+      expect(m['keybinding-mode:my-a']).toBeDefined()
+      expect(m['keybinding-mode:my-b']).toBeDefined()
+      expect(m['keybinding-mode:.german-layout']).toBeUndefined()
 
     it 'simple_emacs', ->
       m = db.resolveWithTest 'simple_emacs'
@@ -578,7 +590,7 @@ describe 'Keymode DB', ->
           '9': 'native!'
 
     it 'german_layout', ->
-      m = db.resolveWithTest 'german_layout'
+      m = db.resolveWithTest '.german_layout'
       expect(m).toBeDefined()
       expect(m.keymap).toEqual
         body:

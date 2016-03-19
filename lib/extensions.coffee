@@ -6,7 +6,7 @@ report = (msg) ->
 
 module.exports =
 
-  activate: ->
+  activate: (@db) ->
     @extensions = {}
     @static_ext = {}
     @dynamic_ext = {}
@@ -18,12 +18,14 @@ module.exports =
     @static_ext = null
     @dynamic_ext = null
     @special_ext = null
+    @db = null
 
   remove: (name) ->
     return unless @extensions[name]?
     @static_ext[ext] = null for ext in @extensions[name].static
     @dynamic_ext[ext] = null for ext in @extensions[name].dynamic
     @special_ext[ext] = null for ext in @extensions[name].special
+    ext.deactivate?() for ext in @extensions[name].all
     delete @consumed[name]
 
   consume: ({name, extensions}) ->
@@ -69,7 +71,7 @@ module.exports =
       else if extension.getDynamicMode?
         extension.isStaticMode = -> false
 
-      r.all.push e
+      r.all.push extension
       if extension.getStaticMode?
         r.static.push e
         @static_ext[e] = extension
@@ -81,6 +83,7 @@ module.exports =
         @special_ext[e] = extension
 
     @extensions[name] = r
+    e.activate?(@db) for e in r.all
     new Disposable(=> @remove(name))
 
   getStatic: (inh, sobj) ->
@@ -91,7 +94,11 @@ module.exports =
     return null
 
   getStaticNames: ->
-    return Object.keys(@static_ext)
+    m = []
+    for k in Object.keys(@static_ext)
+      if (n = @static_ext[k].getStaticNames?())?
+        m = m.concat n
+    return m
 
   getDynamic: (inh, sobj) ->
     for k in Object.keys(@dynamic_ext)

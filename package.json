@@ -2,7 +2,7 @@
   "name": "keybinding-mode",
   "main": "./lib/keybinding-mode",
   "version": "0.0.0",
-  "description": "A short description of your package",
+  "description": "Advanced keymap management in Atom",
   "keywords": [
   ],
   "repository": "https://github.com/deprint/keybinding-mode",
@@ -20,6 +20,12 @@
       "default": "false",
       "title": "Enable Debugging",
       "description": "Debug keybinding modes by dumping every step on console"
+    },
+    "delay": {
+      "type": "integer",
+      "default": "3000",
+      "title": "Autostart Delay",
+      "description": "Delay loading of autostart mode to give packages enough time to provide their own modes"
     }
   },
   "consumedServices": {

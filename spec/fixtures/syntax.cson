@@ -13,14 +13,14 @@ import_keymap: [
       'ctrl-s': 'find-and-replace:toggle'
 ]
 dynamic_keymaps: ['-upper', '-lower', '-numbers']
-german_layout: [
+'.german_layout': [
   '+k/z/y/'
   '+k/y/z/'
 ]
 localize_emacs: [[
   'simple_emacs'
   '+'
-  'german_layout'
+  '.german_layout'
 ]]
 unctrl_all: [
   'dynamic_keymaps'
