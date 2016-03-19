@@ -1,4 +1,4 @@
-{Emitter} = require 'atom'
+{Emitter, CompositeDisposable} = require 'atom'
 
 extensions = require './extensions'
 dynamicModes = require './dynamic-modes'
@@ -107,6 +107,9 @@ module.exports =
   onReload: (cb) ->
     @emitter.on 'reload', cb
 
+  onAppend: (cb) ->
+    @emitter.on 'append', cb
+
   onToggle: (cb) ->
     @emitter.on 'toggle', cb
 
@@ -116,34 +119,17 @@ module.exports =
   onActivate: (cb) ->
     @emitter.on 'activate', cb
 
-  reload: (f) ->
+  reload: ->
     @deactivateKeymap(@current_keymap) if @current_keymap?
-    filepath = f ? path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode.cson')
+    @mode_subscription?.dispose()
+    @mode_subscription = new CompositeDisposable
+    @modes = {}
     new Promise((resolve, reject) =>
-      fs.exists filepath, (exists) =>
-        return unless exists
-        CSON.readFile filepath, (error, contents) =>
-          if error? or not contents?
-            report 'Could not read ' + filepath
-            reject 'Could not read ' + filepath
-            return
-          @mode_subscription?.dispose()
-          @modes = {}
-          command_map = {}
-          for mode in Object.keys contents
-            if contents[mode] instanceof Array
-              contents[mode].splice(0, 0, '!all')
-            else
-              contents[mode] = ['!all', contents[mode]]
-            @modes[mode] =
-              inherited: contents[mode]
-              resolved: false
-              execute: null
-              keymap: null
-            command_map['keybinding-mode:' + mode] = ((_this, name) -> -> _this.toggleKeymap(name))(this, mode)
-          @mode_subscription = atom.commands.add 'atom-workspace', command_map
-          @emitter.emit 'reload'
-          resolve()
+      @appendFile('keybinding-mode.cson').then(=>
+        @resolveAutostart() if @modes['!autostart']?
+        @emitter.emit 'reload'
+        resolve()
+      , reject)
     )
 
   toggleKeymap: (name) ->
@@ -172,6 +158,71 @@ module.exports =
     mode.execute?()
     @key_subscription = atom.keymaps.add 'keybinding-mode:' + name, mode.keymap
     @emitter.emit 'activate', name
+
+  appendFile: (file) ->
+    file = path.resolve(path.dirname(atom.config.getUserConfigPath()), file)
+    new Promise((resolve, reject) =>
+      fs.exists file, (exists) =>
+        return reject('File does not exist: ' + file) unless exists
+        CSON.readFile file, (error, contents) =>
+          if error? or not contents?
+            report 'Could not read ' + file
+            reject 'Could not read ' + file
+            return
+          command_map = {}
+          autostart = null
+          promises = []
+          for mode in Object.keys contents
+            if mode is '!autostart'
+              autostart = contents[mode]
+              continue
+            else if mode is '!import'
+              unless contents[mode] instanceof Array
+                report('!import must be an array of file paths')
+                continue
+              for file in contents[mode]
+                unless (typeof file) is 'string'
+                  report('File path must be string: ' + file)
+                  continue
+                promises.push @appendFile(file)
+            else if contents[mode] instanceof Array
+              contents[mode].splice(0, 0, '!all')
+            else
+              contents[mode] = ['!all', contents[mode]]
+            @modes[mode] =
+              inherited: contents[mode]
+              resolved: false
+              execute: null
+              keymap: null
+            command_map['keybinding-mode:' + mode] = ((_this, name) -> -> _this.toggleKeymap(name))(this, mode)
+          Promise.all(promises).then(=>
+            if autostart?
+              if autostart instanceof Array
+                contents['!autostart'].splice(0, 0, '!all')
+              else
+                contents['!autostart'] = ['!all', contents[mode]]
+              @modes['!autostart'] =
+                inherited: contents['!autostart']
+                resolved: false
+                execute: null
+                keymap: null
+            @mode_subscription.add atom.commands.add 'atom-workspace', command_map
+            @emitter.emit 'append', file
+            resolve()
+          , reject)
+    )
+
+  resolveAutostart: ->
+    new Promise((resolve, reject) =>
+      fs.exists (f = path.join(atom.project.getPaths()[0], '.advanced-keybindings.cson')), (exists) =>
+        unless exists
+          if (typeof @modes['!autostart'].inherited[1]) is 'string' and @isStatic(@modes['!autostart'].inherited[1])
+            @activateKeymap @modes['!autostart'].inherited[1]
+          else
+            @activateKeymap '!autostart'
+          return resolve()
+        @appendFile(f).then resolve, reject
+    )
 
   resolveWithTest: (name) ->
     return @modes[name] if @modes[name]?.resolved

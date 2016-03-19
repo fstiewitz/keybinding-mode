@@ -6,6 +6,10 @@ serviceMaps = null
 
 path = require 'path'
 
+report = (msg) ->
+  console.log msg
+  atom.notifications?.addError msg
+
 module.exports = KeybindingMode =
   subscriptions: null
 
@@ -14,8 +18,13 @@ module.exports = KeybindingMode =
     @subscriptions = new CompositeDisposable
     @subscriptions.add atom.commands.add 'atom-workspace', 'keybinding-mode:open-config': ->
       atom.workspace.open(path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode.cson'))
-    @subscriptions.add atom.commands.add 'atom-workspace', 'keybinding-mode:reload': -> kdb.reload()
-    @subscriptions.add atom.packages.onDidActivateInitialPackages -> kdb.reload()
+    @subscriptions.add atom.commands.add 'atom-workspace',
+      'keybinding-mode:reload': -> kdb.reload().then(->
+        console.log 'Loaded advanced keymap'
+      , report)
+    @subscriptions.add atom.packages.onDidActivateInitialPackages -> kdb.reload().then(->
+      console.log 'Loaded advanced keymap'
+    , report)
     @subscriptions.add kdb.onReload =>
       @keybindingElement?.innerText = 'default'
     @subscriptions.add kdb.onDeactivate =>
