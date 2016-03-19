@@ -119,16 +119,19 @@ module.exports =
   onActivate: (cb) ->
     @emitter.on 'activate', cb
 
-  reload: ->
+  reload: (f) ->
+    unless f?
+      f = path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode.cson')
     @deactivateKeymap(@current_keymap) if @current_keymap?
     @mode_subscription?.dispose()
     @mode_subscription = new CompositeDisposable
     @modes = {}
     new Promise((resolve, reject) =>
-      @appendFile('keybinding-mode.cson').then(=>
-        @resolveAutostart() if @modes['!autostart']?
-        @emitter.emit 'reload'
-        resolve()
+      @appendFile(f).then(=>
+        @resolveAutostart().then(=>
+          @emitter.emit 'reload'
+          resolve()
+        , reject)
       , reject)
     )
 
@@ -160,7 +163,6 @@ module.exports =
     @emitter.emit 'activate', name
 
   appendFile: (file) ->
-    file = path.resolve(path.dirname(atom.config.getUserConfigPath()), file)
     new Promise((resolve, reject) =>
       fs.exists file, (exists) =>
         return reject('File does not exist: ' + file) unless exists
@@ -180,11 +182,11 @@ module.exports =
               unless contents[mode] instanceof Array
                 report('!import must be an array of file paths')
                 continue
-              for file in contents[mode]
+              for next_file in contents[mode]
                 unless (typeof file) is 'string'
                   report('File path must be string: ' + file)
                   continue
-                promises.push @appendFile(file)
+                promises.push @appendFile(path.resolve(path.dirname(file), next_file))
             else if contents[mode] instanceof Array
               contents[mode].splice(0, 0, '!all')
             else
@@ -215,13 +217,18 @@ module.exports =
   resolveAutostart: ->
     new Promise((resolve, reject) =>
       fs.exists (f = path.join(atom.project.getPaths()[0], '.advanced-keybindings.cson')), (exists) =>
-        unless exists
+        if exists
+          p = [@appendFile(f)]
+        else
+          p = []
+        Promise.all(p).then(=>
+          return resolve() unless @modes['!autostart']?
           if (typeof @modes['!autostart'].inherited[1]) is 'string' and @isStatic(@modes['!autostart'].inherited[1])
             @activateKeymap @modes['!autostart'].inherited[1]
           else
             @activateKeymap '!autostart'
-          return resolve()
-        @appendFile(f).then resolve, reject
+          resolve()
+        , reject)
     )
 
   resolveWithTest: (name) ->
@@ -275,8 +282,6 @@ module.exports =
       else if i instanceof Array
         if @isSpecial i
           m = @getSpecial i, sobj
-        else if @isCombined i
-          m = @getCombined i, sobj
         else
           m = @process i, sobj
       else
@@ -343,17 +348,13 @@ module.exports =
     report "Assertion: getSpecial must work on #{inh}"
     return null
 
-  getCombined: (inh, sobj) ->
-    sobj.no_filter = true
-    name = @getName inh
-    @modes[name] = inherited: @_getCombined(inh.slice())
-    @resolve name, sobj
-
   replacePatterns: (mode, name) ->
     m = []
     for inh in mode
       if @isPattern inh
         m = m.concat @getStaticModes inh, name
+      else if (inh instanceof Array) and @isCombined inh
+        m.push @getCombined inh
       else
         m.push inh
     return m
@@ -376,15 +377,16 @@ module.exports =
     md5.update(JSON.stringify(name), 'utf8')
     md5.digest('hex')
 
-  _getCombined: (inh) ->
+  getCombined: (inh) ->
     a = inh.shift()
     op = inh.shift()
-    b = inh.shift()
+    b = inh
+    b = inh[0] if b.length is 1
 
     if a instanceof Array and @isCombined a
-      a = @_getCombined a
+      a = @getCombined a
     if b instanceof Array and @isCombined b
-      b = @_getCombined b
+      b = @getCombined b
 
     if op is '&'
       return [a, b]
