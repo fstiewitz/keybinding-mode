@@ -194,7 +194,8 @@ module.exports =
         exists = all[s]?[k]?
         if ((not exists) and s isnt '*' and selector[k] is 'unset!') or all[s]?[k] is selector[k]
           delete selector[k]
-
+      if Object.keys(selector).length is 0
+        delete m[s]
     return mode
 
   resolve: (name, sobj) ->
@@ -204,8 +205,7 @@ module.exports =
   _resolve: (name, _sobj) ->
     inh = @modes[name].inherited.slice()
     inh = @replacePatterns inh, name
-    _sobj ?= {}
-    _sobj.is_static = false
+    _sobj ?= {is_static: true}
     if inh.length > 1
       source = @getSource inh.shift(), _sobj
     else if _sobj.source?
@@ -214,7 +214,6 @@ module.exports =
       source = '!all'
     debug 'source', source
     debug 'inh', inh
-    is_static = _sobj.is_static
     for i in inh
       sobj = {source, getKeyBindings, filter, merge, is_static: false, no_filter: false}
       if (typeof i) is 'string'
@@ -232,7 +231,7 @@ module.exports =
       else
         sobj.is_static = true if i?.keymap?
         m = i
-      is_static = true if sobj.is_static
+      _sobj.is_static = false unless sobj.is_static
       debug 'pre-filter', {i, m}
       unless sobj.no_filter
         filter m, source
@@ -241,7 +240,7 @@ module.exports =
         debug 'no-filter', m
       merge @modes[name], m
       debug 'post-merge', {mode: @modes[name], m}
-    @modes[name].resolved = is_static
+    @modes[name].resolved = _sobj.is_static
     return @modes[name]
 
   getSource: (inh, sobj) ->

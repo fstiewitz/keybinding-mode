@@ -371,6 +371,44 @@ describe 'Keymode DB', ->
           'ctrl-f': 'foo'
           'ctrl-j': 'bar'
 
+    it 'already resolved', ->
+      db.modes['test1'] = inherited: [
+        '!all'
+        keymap:
+          'atom-text-editor':
+            'ctrl-f': 'foo'
+      ]
+      m = db.resolve 'test1'
+      expect(m.resolved).toBe true
+      db.modes['test1'].inherited = ['!all', '-']
+      n = db.resolve 'test1'
+      expect(n.keymap).toEqual
+        'atom-text-editor':
+          'ctrl-f': 'foo'
+
+    it 'dynamic resolved', ->
+      db.modes['test1'] = inherited: [
+        '!all'
+        '-k/^ctrl-f/'
+        '+s/body .native-key-bindings/'
+        'test2'
+      ]
+      db.modes['test2'] = inherited: [
+        keymap:
+          'atom-text-editor':
+            'ctrl-f': 'foo'
+      ]
+      m = db.resolveWithTest 'test1'
+      expect(m.resolved).toBe false
+      db.modes['test1'].inherited = ['!all', keymap:
+        'atom-text-editor':
+          'ctrl-f': 'bar'
+      ]
+      n = db.resolveWithTest 'test1'
+      expect(n.keymap).toEqual
+        'atom-text-editor':
+          'ctrl-f': 'bar'
+
   describe '::reload', ->
 
     beforeEach ->
