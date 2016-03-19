@@ -1,3 +1,4 @@
+'!import': ['a/a.cson']
 simple_emacs:
   keymap:
     'atom-text-editor':

@@ -128,8 +128,8 @@ module.exports =
     @modes = {}
     new Promise((resolve, reject) =>
       @appendFile(f).then(=>
-        @resolveAutostart().then(=>
-          @emitter.emit 'reload'
+        @resolveAutostart().then((name) =>
+          @emitter.emit 'reload', name
           resolve()
         , reject)
       , reject)
@@ -222,12 +222,13 @@ module.exports =
         else
           p = []
         Promise.all(p).then(=>
-          return resolve() unless @modes['!autostart']?
+          return resolve('default') unless @modes['!autostart']?
           if (typeof @modes['!autostart'].inherited[1]) is 'string' and @isStatic(@modes['!autostart'].inherited[1])
             @activateKeymap @modes['!autostart'].inherited[1]
+            resolve(@modes['!autostart'].inherited[1])
           else
             @activateKeymap '!autostart'
-          resolve()
+            resolve('!autostart')
         , reject)
     )
 

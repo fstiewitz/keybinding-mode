@@ -422,6 +422,8 @@ describe 'Keymode DB', ->
       expect(db.modes.localize_emacs).toBeDefined()
       expect(db.modes.unctrl_all).toBeDefined()
       expect(db.modes.unctrl_fold).toBeDefined()
+      expect(db.modes['my-a']).toBeDefined()
+      expect(db.modes['my-b']).toBeDefined()
 
     it 'simple_emacs', ->
       m = db.resolveWithTest 'simple_emacs'
@@ -1480,3 +1482,18 @@ describe 'Keymode DB', ->
           'ctrl-alt--': 'unset!'
           'alt-=': 'pane:increase-size'
           'alt--': 'pane:decrease-size'
+
+    it 'my-a', ->
+      m = db.resolveWithTest 'my-a'
+      expect(m).toBeDefined()
+      expect(m.keymap).toEqual
+        'atom-text-editor':
+          'alt-f': 'foo'
+
+    it 'my-b', ->
+      m = db.resolveWithTest 'my-b'
+      expect(m).toBeDefined()
+      expect(m.keymap).toEqual
+        'atom-text-editor':
+          'alt-f': 'foo'
+          'alt-p': 'bar'

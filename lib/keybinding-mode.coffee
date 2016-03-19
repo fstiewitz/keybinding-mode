@@ -25,8 +25,8 @@ module.exports = KeybindingMode =
     @subscriptions.add atom.packages.onDidActivateInitialPackages -> kdb.reload().then(->
       console.log 'Loaded advanced keymap'
     , report)
-    @subscriptions.add kdb.onReload =>
-      @keybindingElement?.innerText = 'default'
+    @subscriptions.add kdb.onReload (name) =>
+      @keybindingElement?.innerText = name
     @subscriptions.add kdb.onDeactivate =>
       @keybindingElement?.innerText = 'default'
     @subscriptions.add kdb.onActivate (name) =>

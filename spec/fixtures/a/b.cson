@@ -1,0 +1,6 @@
+'my-b': [
+  'my-a'
+  keymap:
+    'atom-text-editor':
+      'alt-p': 'bar'
+]

@@ -1,0 +1,4 @@
+'my-a': keymap:
+  'atom-text-editor':
+    'alt-f': 'foo'
+'!import': ['b.cson']
