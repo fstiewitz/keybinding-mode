@@ -33,7 +33,7 @@
         "^1.0.0": "consumeKeybindingMode"
       }
     },
-    "keybinding-mode.extension": {
+    "keybinding-mode.extensions": {
       "versions": {
         "^1.0.0": "consumeKeybindingExtension"
       }

@@ -46,11 +46,7 @@ say_whaaaat: [
       '+k/^ctrl-/'
       'simple_emacs'
       '-k/^ctrl-k/'
-      [
-        ['+k/^alt-/', '&', '+c/^editor:/']
-        '-'
-        '+k/^alt-/ctrl-k /'
-      ]
+      ['+k/^alt-/', '&', '+c/^editor:/', '&', '-k/^alt-/ctrl-k /']
     ]
     '+'
     '-k/^ctrl-//'
