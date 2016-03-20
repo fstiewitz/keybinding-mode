@@ -144,6 +144,14 @@ emacs: ['~']
 
 `~` without a regular expression matches `\.?NAME-`. In this example, all modes starting with `emacs-` would be matched. This also includes modes from other packages (that use the service interface) and is a simple way for other packages to provide alternate keymaps (e.g. for `emacs` users).
 
+### Invert Keymaps
+
+```coffee
+'Disable keybindings that do not start with ctrl-k': ['!not', '-k/^ctrl-k/']
+```
+
+`['!not', filter]` returns all keybindings that did not pass `filter`. `filter` cannot be a substituting regular expression.
+
 ### Import other keymap files
 
 ```coffee
