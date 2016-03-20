@@ -27,9 +27,9 @@ describe 'Mode Provider - Regular Expressions', ->
 
   describe 'Test getDynamicMode', ->
     it 'simple matching', ->
-      expect(modes.getDynamicMode '+k/^ctrl-/', sobj).toEqual [['!+', 'key', '^ctrl-', undefined]]
+      expect(modes.getDynamicMode '+k/^ctrl-n/', sobj).toEqual ['!all', keymap: body: 'ctrl-n': 'application:new-file']
     it 'simple replace', ->
-      expect(modes.getDynamicMode '+k/^ctrl-//', sobj).toEqual [['!+', 'key', '^ctrl-', '']]
+      expect(modes.getDynamicMode '+k/^ctrl-k ctrl-alt-//', sobj).toEqual ['!all', keymap: body: w: 'pane:close-other-items']
 
   describe 'Test getSpecial', ->
     it '+match', ->

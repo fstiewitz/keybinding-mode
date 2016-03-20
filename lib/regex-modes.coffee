@@ -37,7 +37,7 @@ module.exports =
       substitute = n[1]
       name = name.substr(n[1].length + 1)
     if name is ''
-      return [['!' + action, operation, match, substitute]]
+      return @getSpecial(['!' + action, operation, match, substitute], source)
     else
       return null
 
