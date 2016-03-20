@@ -227,6 +227,24 @@ describe 'Keymode DB', ->
         a:
           a: 1
           c: 2
+    it 'inverted keymaps', ->
+      a = keymap:
+        a:
+          a: 1
+          c: 1
+      b = keymap:
+        a:
+          a: 1
+          b: 2
+          c: 2
+        b:
+          d: 3
+      db.filter a, b, true
+      expect(a.keymap).toEqual
+        a:
+          b: 2
+        b:
+          d: 3
 
   describe '::resolve', ->
     it 'simple keymap', ->
