@@ -3,7 +3,7 @@ modes = require '../lib/regex-modes'
 getKeyBindings = ->
   atom.keymaps.getKeyBindings()
 
-sobj = {getKeyBindings, no_filter: false}
+sobj = {getKeyBindings, flags: {no_filter: false}}
 
 describe 'Mode Provider - Regular Expressions', ->
 

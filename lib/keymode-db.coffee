@@ -81,7 +81,7 @@ getKeyBindings = ->
   r
 
 plusKeymap = (sobj) ->
-  sobj.no_filter = true
+  sobj.flags.no_filter = true
   keymap = {}
   for keybinding in sobj.getKeyBindings()
     keymap[keybinding.selector] ?= {}
@@ -89,7 +89,7 @@ plusKeymap = (sobj) ->
   return {keymap}
 
 minusKeymap = (sobj) ->
-  sobj.no_filter = true
+  sobj.flags.no_filter = true
   keymap = {}
   for keybinding in sobj.getKeyBindings()
     keymap[keybinding.selector] ?= {}
@@ -297,7 +297,7 @@ module.exports =
   _resolve: (name, _sobj) ->
     inh = @modes[name].inherited.slice()
     inh = @replacePatterns inh, name
-    _sobj ?= {is_static: true}
+    _sobj ?= {is_static: true, directives: {}, flags: {}}
     if inh.length > 1
       source = @getSource inh.shift(), _sobj
     else if _sobj.source?
@@ -313,7 +313,8 @@ module.exports =
         filter
         merge
         is_static: false
-        no_filter: false
+        flags: {no_filter: false}
+        directives: _.clone _sobj.directives
       }
       if (typeof i) is 'string'
         if @isStatic i
@@ -330,7 +331,7 @@ module.exports =
         m = i
       _sobj.is_static = false unless sobj.is_static
       debug 'pre-filter', {i, m}
-      unless sobj.no_filter
+      unless sobj.flags.no_filter
         filter m, source
         debug 'post-filter', m
       else
@@ -407,7 +408,7 @@ module.exports =
     return (mode for mode in Object.keys(@getStaticNames()) when r.test(mode) and mode isnt name)
 
   process: (inh, sobj) ->
-    sobj.no_filter = true
+    sobj.flags.no_filter = true
     name = @getName inh
     @modes[name] = inherited: inh
     @resolve name, sobj

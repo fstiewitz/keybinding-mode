@@ -23,7 +23,7 @@ module.exports =
     @regex_cache = null
 
   getDynamicMode: (name, source) ->
-    source.no_filter = true
+    source.flags.no_filter = true
     unless (m = /^([+-])([cks])(.)/.exec name)?
       return null
     action = m[1]
@@ -42,7 +42,7 @@ module.exports =
       return null
 
   getSpecial: (inh, source) ->
-    source.no_filter = true
+    source.flags.no_filter = true
     action = inh[0]
     operator = inh[1]
     operator = 'keystrokes' if operator is 'key'

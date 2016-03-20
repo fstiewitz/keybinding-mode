@@ -17,7 +17,6 @@ module.exports = KeybindingMode =
   activate: (state) ->
     kdb.activate()
     @subscriptions = new CompositeDisposable
-    @subscriptions.add @consumeKeybindingExtension(require './not')
     @subscriptions.add atom.commands.add 'atom-workspace', 'keybinding-mode:open-advanced-keymap': ->
       atom.workspace.open(path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode.cson'))
     @subscriptions.add atom.commands.add 'atom-workspace',
