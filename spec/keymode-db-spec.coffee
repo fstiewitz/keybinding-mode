@@ -365,10 +365,10 @@ describe 'Keymode DB', ->
         '!all'
         '~\\d+$'
       ]
+      db.names = ['test2']
       m = db.resolve 'test3'
       expect(m.keymap).toEqual
         'atom-text-editor':
-          'ctrl-f': 'foo'
           'ctrl-j': 'bar'
 
     it 'already resolved', ->

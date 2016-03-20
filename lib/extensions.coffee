@@ -26,7 +26,7 @@ module.exports =
     @dynamic_ext[ext] = null for ext in @extensions[name].dynamic
     @special_ext[ext] = null for ext in @extensions[name].special
     ext.deactivate?() for ext in @extensions[name].all
-    delete @consumed[name]
+    delete @extensions[name]
 
   consume: ({name, extensions}) ->
     unless name?
@@ -35,8 +35,8 @@ module.exports =
     unless extensions?
       report 'Service did not provide any extensions'
       return
-    unless extensions instanceof Array
-      report 'Service\'s extensions is not an array'
+    unless (typeof extensions) is 'object'
+      report 'Service\'s extensions is not an object'
       return
     if @extensions[name]?
       report "Service #{name} already exists"
@@ -53,9 +53,10 @@ module.exports =
         report "Extension #{e} provides nothing"
         continue
 
-      unless extension.isValidMode?
-        report "Extension #{e} must provide ::isValidMode(name)"
-        continue
+      if extension.getStaticMode? or extension.getDynamicMode?
+        unless extension.isValidMode?
+          report "Extension #{e} must provide ::isValidMode(name)"
+          continue
 
       if extension.getSpecial?
         unless extension.isSpecial?
@@ -108,8 +109,8 @@ module.exports =
 
   getSpecial: (inh, sobj) ->
     for k in Object.keys(@special_ext)
-      if (m = @special_ext[k].getSpecial inh, sobj)?
-        return m
+      if @special_ext[k].isSpecial inh
+        return @special_ext[k].getSpecial inh, sobj
     return null
 
   isSpecial: (inh) ->
@@ -121,7 +122,7 @@ module.exports =
   isValidMode: (inh) ->
     for k in Object.keys(@extensions)
       for ext in @extensions[k].all
-        if ext.isValidMode inh
+        if ext.isValidMode?(inh)
           return true
     return false
 

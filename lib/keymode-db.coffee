@@ -17,8 +17,10 @@ _ = require('underscore-plus')
 debug = (type, obj) ->
   console.log {type, obj} if atom.config.get('keybinding-mode.debugger')
 
+suppressed = false
+
 report = (msg) ->
-  atom.notifications?.addError msg
+  atom.notifications?.addError msg unless suppressed
   console.log msg
 
 pick = (o, f) ->
@@ -50,7 +52,24 @@ filter = (dest, source) ->
     return false unless source.keymap[k]?
     dest.keymap[k] = pick dest.keymap[k], (k2) ->
       return source.keymap[k][k2]?
-    return true
+    return Object.keys(dest.keymap[k]).length isnt 0
+
+diff = (mode) ->
+  m = mode.keymap
+  all = {}
+  for {selector, keystrokes, command} in atom.keymaps.getKeyBindings()
+    all[selector] ?= {}
+    all[selector][keystrokes] = command
+
+  for s in Object.keys m
+    selector = m[s]
+    for k in Object.keys selector
+      exists = all[s]?[k]?
+      if ((not exists) and s isnt '*' and selector[k] is 'unset!') or all[s]?[k] is selector[k]
+        delete selector[k]
+    if Object.keys(selector).length is 0
+      delete m[s]
+  return mode
 
 getKeyBindings = ->
   return atom.keymaps.getKeyBindings() if @source is '!all'
@@ -97,6 +116,7 @@ module.exports =
   deactivate: ->
     @scheduledReload = null
     @modes = {}
+    @names = []
     @mode_subscription?.dispose()
     @mode_subscription = null
     @deactivateKeymap @current_keymap if @current_keymap?
@@ -128,6 +148,7 @@ module.exports =
     @mode_subscription?.dispose()
     @mode_subscription = new CompositeDisposable
     @modes = {}
+    @names = []
     new Promise((resolve, reject) =>
       @appendFile(f).then(=>
         @resolveAutostart().then((name) =>
@@ -198,6 +219,7 @@ module.exports =
               resolved: false
               execute: null
               keymap: null
+            @names.push mode
             if mode[0] isnt '.'
               command_map['keybinding-mode:' + mode] = @getCommandFunction mode
           Promise.all(promises).then(=>
@@ -245,39 +267,28 @@ module.exports =
           p = []
         Promise.all(p).then(=>
           return resolve('default') unless @modes['!autostart']?
+          suppressed = true
           if (typeof @modes['!autostart'].inherited[1]) is 'string' and @isStatic(@modes['!autostart'].inherited[1])
             @activateKeymap @modes['!autostart'].inherited[1]
+            suppressed = false
             resolve(@modes['!autostart'].inherited[1])
           else
             @activateKeymap '!autostart'
+            suppressed = false
             resolve('!autostart')
-        , reject)
+        , ->
+          suppressed = false
+          reject()
+        )
     )
 
   resolveWithTest: (name) ->
     return @modes[name] if @modes[name]?.resolved
     return unless @dryRun name
-    m = @diff(@_resolve name)
+    m = diff(@_resolve name)
     if atom.config.get('keybinding-mode.debugger')
       CSON.writeFileSync path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode-dump.cson'), m.keymap
     return m
-
-  diff: (mode) ->
-    m = mode.keymap
-    all = {}
-    for {selector, keystrokes, command} in atom.keymaps.getKeyBindings()
-      all[selector] ?= {}
-      all[selector][keystrokes] = command
-
-    for s in Object.keys m
-      selector = m[s]
-      for k in Object.keys selector
-        exists = all[s]?[k]?
-        if ((not exists) and s isnt '*' and selector[k] is 'unset!') or all[s]?[k] is selector[k]
-          delete selector[k]
-      if Object.keys(selector).length is 0
-        delete m[s]
-    return mode
 
   resolve: (name, sobj) ->
     return @modes[name] if @modes[name]?.resolved
@@ -296,7 +307,14 @@ module.exports =
     debug 'source', source
     debug 'inh', inh
     for i in inh
-      sobj = {source, getKeyBindings, filter, merge, is_static: false, no_filter: false}
+      sobj = {
+        source
+        getKeyBindings
+        filter
+        merge
+        is_static: false
+        no_filter: false
+      }
       if (typeof i) is 'string'
         if @isStatic i
           m = @getStatic i, sobj
@@ -394,11 +412,15 @@ module.exports =
     @modes[name] = inherited: inh
     @resolve name, sobj
 
-  getName: (name) ->
-    return name if (typeof name) is 'string'
+  getName: (name, init = false) ->
+    if (typeof name) is 'string'
+      @modes[name] = {} if init
+      return name
     md5 = crypto.createHash('md5')
     md5.update(JSON.stringify(name), 'utf8')
-    md5.digest('hex')
+    m = md5.digest('hex')
+    @modes[m] = {} if init
+    return m
 
   getCombined: (inh) ->
     a = inh.shift()
@@ -418,7 +440,7 @@ module.exports =
 
   getStaticNames: (ignore = 0) ->
     modes = {}
-    modes[k] = true for k in Object.keys(@modes)
+    modes[k] = true for k in @names
     modes[k] = true for k in extensions.getStaticNames() if ignore isnt 2
     modes[k] = true for k in serviceModes.getStaticNames() if ignore isnt 1
     return modes

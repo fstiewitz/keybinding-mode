@@ -62,7 +62,7 @@ included in "vanilla keybinding-mode":
 * `+/-core-packages` enables/disables the keymap of all core packages.
 * `+/-all-core` enables/disables all core keybindings.
 * `+/-custom` enables/disables your custom keymap.
-* `-upper`, `-lower`, `-numbers` disable uppercase letters, lowercase letters and numbers in your text editor, but leaves mini editors untouched.
+* `-upper`, `-lower`, `-numbers` disables uppercase letters, lowercase letters and numbers in your text editor, but leaves mini editors untouched.
 * `+/-package-name` enables/disables the keymap of package `package-name`.
 
 ### Regular Expressions
