@@ -23,7 +23,6 @@ module.exports =
     @regex_cache = null
 
   getDynamicMode: (name, source) ->
-    source.flags.no_filter = true
     unless (m = /^([+-])([cks])(.)/.exec name)?
       return null
     action = m[1]
@@ -67,13 +66,14 @@ module.exports =
         keymap[keybinding.selector] ?= {}
         keymap[keybinding.selector][keybinding.keystrokes] = keybinding.command
       else
-        if matching_regex.test keybinding[operator]
+        if (matching_regex.test keybinding[operator]) ^ (source.flags.not is true)
           keymap[keybinding.selector] ?= {}
           if action isnt '!-'
             keymap[keybinding.selector][keybinding.keystrokes] = keybinding.command
           else
             keymap[keybinding.selector][keybinding.keystrokes] = 'unset!'
-    return ['!all', keymap: keymap]
+    source.flags.resolved = true
+    return keymap: keymap
 
   isValidMode: (_name) ->
     name = _name

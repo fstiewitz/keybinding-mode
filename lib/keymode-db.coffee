@@ -324,25 +324,26 @@ module.exports =
       source = '!all'
     debug 'source', source
     debug 'inh', inh
-    @resolveFilter @modes[name], i, _sobj, source for i in inh
+    for i in inh
+      sobj = {
+        source
+        getKeyBindings
+        filter
+        merge
+        is_static: false
+        flags: {no_filter: false}
+        directives: _.clone _sobj.directives
+      }
+      @resolveFilter @modes[name], i, sobj, _sobj
     @modes[name].resolved = _sobj.is_static
     return @modes[name]
 
   resolveMode: (i, _sobj) ->
     mode = keymap: {}
-    @resolveFilter mode, i, _sobj, _sobj.source
+    @resolveFilter mode, i, _sobj, _sobj
     return mode
 
-  resolveFilter: (mode, i, _sobj, source) ->
-    sobj = {
-      source
-      getKeyBindings
-      filter
-      merge
-      is_static: false
-      flags: {no_filter: false}
-      directives: _.clone _sobj.directives
-    }
+  resolveFilter: (mode, i, sobj, _sobj) ->
     if (typeof i) is 'string'
       if @isStatic i
         m = @getStatic i, sobj
@@ -354,17 +355,24 @@ module.exports =
       else
         m = @process i, sobj
     else
-      sobj.is_static = true if i?.keymap?
+      sobj.is_static = _sobj.is_static
       m = i
     _sobj.is_static = false unless sobj.is_static
     debug 'pre-filter', {i, m}
     unless sobj.flags.no_filter
-      filter m, source, _sobj.flags.not?
+      filter m, sobj.source, (sobj.flags.not is true)
       debug 'post-filter', m
     else
       debug 'no-filter', m
     merge mode, m
     debug 'post-merge', {mode: mode, m}
+
+  cloneSourceObject: (inh) ->
+    sobj = _.clone(inh)
+    sobj.is_static = false
+    sobj.flags = {no_filter: false}
+    sobj.directives = _.clone inh.directives
+    return sobj
 
   getSource: (inh, sobj) ->
     return inh if inh is '!all'
@@ -389,24 +397,29 @@ module.exports =
     return minusKeymap(sobj) if name is '-'
     if extensions.isValidMode name
       inh = extensions.getDynamic name, sobj
+      return inh if sobj.flags.resolved is true
       return @resolveMode inh, sobj
     if serviceModes.isValidMode name
       inh = serviceModes.getDynamicMode name, sobj
+      return inh if sobj.flags.resolved is true
       return @resolveMode inh, sobj
     if dynamicModes.isValidMode name
       inh = dynamicModes.getDynamicMode name, sobj
+      return inh if sobj.flags.resolved is true
       return @resolveMode inh, sobj
     if regexModes.isValidMode name
       inh = regexModes.getDynamicMode name, sobj
+      return inh if sobj.flags.resolved is true
       return @resolveMode inh, sobj
     report "Assertion: getDynamic must work on #{name}"
     return null
 
   getSpecial: (inh, sobj) ->
-    name = @getName inh
     if (m = extensions.getSpecial inh, sobj)?
+      return m if sobj.flags.resolved is true
       return @resolveMode m, sobj
     if (m = regexModes.getSpecial inh, sobj)?
+      return m if sobj.flags.resolved is true
       return @resolveMode m, sobj
     report "Assertion: getSpecial must work on #{inh}"
     return null

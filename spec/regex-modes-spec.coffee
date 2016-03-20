@@ -27,40 +27,32 @@ describe 'Mode Provider - Regular Expressions', ->
 
   describe 'Test getDynamicMode', ->
     it 'simple matching', ->
-      expect(modes.getDynamicMode '+k/^ctrl-n/', sobj).toEqual ['!all', keymap: body: 'ctrl-n': 'application:new-file']
+      expect(modes.getDynamicMode '+k/^ctrl-n/', sobj).toEqual keymap: body: 'ctrl-n': 'application:new-file'
     it 'simple replace', ->
-      expect(modes.getDynamicMode '+k/^ctrl-k ctrl-alt-//', sobj).toEqual ['!all', keymap: body: w: 'pane:close-other-items']
+      expect(modes.getDynamicMode '+k/^ctrl-k ctrl-alt-//', sobj).toEqual keymap: body: w: 'pane:close-other-items'
 
   describe 'Test getSpecial', ->
     it '+match', ->
-      expect(modes.getSpecial ['!+', 'key', '^home$'], sobj).toEqual [
-        '!all'
+      expect(modes.getSpecial ['!+', 'key', '^home$'], sobj).toEqual
         keymap:
           'atom-text-editor':
             'home': 'editor:move-to-first-character-of-line'
-      ]
     it '-match', ->
-      expect(modes.getSpecial ['!-', 'key', '^home$'], sobj).toEqual [
-        '!all'
+      expect(modes.getSpecial ['!-', 'key', '^home$'], sobj).toEqual
         keymap:
           'atom-text-editor':
             'home': 'unset!'
-      ]
     it '+replace', ->
-      expect(modes.getSpecial ['!+', 'key', '^(.+?) up', 'ctrl-u $1'], sobj).toEqual [
-        '!all'
+      expect(modes.getSpecial ['!+', 'key', '^(.+?) up', 'ctrl-u $1'], sobj).toEqual
         keymap:
           'body':
             'ctrl-u ctrl-k': 'pane:split-up-and-copy-active-item'
-      ]
     it '-replace', ->
-      expect(modes.getSpecial ['!-', 'key', '^(.+?) up', 'ctrl-u $1'], sobj).toEqual [
-        '!all'
+      expect(modes.getSpecial ['!-', 'key', '^(.+?) up', 'ctrl-u $1'], sobj).toEqual
         keymap:
           'body':
             'ctrl-k up': 'unset!'
             'ctrl-u ctrl-k': 'pane:split-up-and-copy-active-item'
-      ]
 
   describe 'Test isSpecial', ->
     it 'simple matching', ->

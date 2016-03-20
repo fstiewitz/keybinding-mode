@@ -1,13 +1,18 @@
 db = require '../lib/keymode-db'
+extensions = require '../lib/extensions'
+_not = require '../lib/not'
 
 path = require 'path'
 
 describe 'Keymode DB', ->
+  disp = null
 
   beforeEach ->
     db.activate()
+    disp = extensions.consume _not
 
   afterEach ->
+    disp.dispose()
     db.deactivate()
 
   describe '::dryRun', ->
@@ -396,10 +401,10 @@ describe 'Keymode DB', ->
           'atom-text-editor':
             'ctrl-f': 'foo'
       ]
-      m = db.resolve 'test1'
+      m = db.resolveWithTest 'test1'
       expect(m.resolved).toBe true
       db.modes['test1'].inherited = ['!all', '-']
-      n = db.resolve 'test1'
+      n = db.resolveWithTest 'test1'
       expect(n.keymap).toEqual
         'atom-text-editor':
           'ctrl-f': 'foo'
@@ -408,7 +413,7 @@ describe 'Keymode DB', ->
       db.modes['test1'] = inherited: [
         '!all'
         '-k/^ctrl-f/'
-        '+s/body .native-key-bindings/'
+        '+s/body \.native-key-bindings/'
         'test2'
       ]
       db.modes['test2'] = inherited: [
@@ -426,6 +431,25 @@ describe 'Keymode DB', ->
       expect(n.keymap).toEqual
         'atom-text-editor':
           'ctrl-f': 'bar'
+
+    it '!not', ->
+      db.modes['test1'] = inherited: [
+        '!all'
+        ['+k/^alt-/', ['!not', '-c/editor:/']]
+        '+s/native-key-bindings/'
+      ]
+      m = db.resolveWithTest 'test1'
+      expect(m.keymap).toEqual
+        body:
+          'alt-1': 'unset!'
+          'alt-2': 'unset!'
+          'alt-3': 'unset!'
+          'alt-4': 'unset!'
+          'alt-5': 'unset!'
+          'alt-6': 'unset!'
+          'alt-7': 'unset!'
+          'alt-8': 'unset!'
+          'alt-9': 'unset!'
 
   describe '::reload', ->
 

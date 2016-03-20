@@ -3,7 +3,7 @@
 kdb = require './keymode-db'
 
 serviceMaps = null
-extensions = null
+extensions = require './extensions'
 
 path = require 'path'
 
@@ -17,6 +17,7 @@ module.exports = KeybindingMode =
   activate: (state) ->
     kdb.activate()
     @subscriptions = new CompositeDisposable
+    @subscriptions.add extensions.consume(require './not')
     @subscriptions.add atom.commands.add 'atom-workspace', 'keybinding-mode:open-advanced-keymap': ->
       atom.workspace.open(path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode.cson'))
     @subscriptions.add atom.commands.add 'atom-workspace',
@@ -46,7 +47,7 @@ module.exports = KeybindingMode =
     (serviceMaps ? serviceMaps = require './service_maps').consume o
 
   consumeKeybindingExtension: (o) ->
-    (extensions ? extensions = require './extensions').consume o
+    extensions.consume o
 
   consumeStatusBar: (statusBar) ->
     element = document.createElement 'div'
