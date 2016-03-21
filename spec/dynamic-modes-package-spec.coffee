@@ -2,10 +2,15 @@ modes = require '../lib/dynamic-modes'
 
 {Disposable} = require 'atom'
 
-createPackage = (n) ->
+createPackage = (n, k) ->
   name: n
   activateKeymaps: jasmine.createSpy('activateKeymaps')
   deactivateKeymaps: jasmine.createSpy('deactivateKeymaps')
+  keymapActivated: true
+  keymaps: [[
+    'some-file.cson'
+    k
+  ]]
 
 describe 'Dynamic Modes - Package Test', ->
 
@@ -14,9 +19,9 @@ describe 'Dynamic Modes - Package Test', ->
 
   beforeEach ->
     p = [
-      createPackage('test0')
-      createPackage('test1')
-      createPackage('test2')
+      createPackage('test0', {body: 'ctrl-a': 'foo'})
+      createPackage('test1', {body: 'ctrl-b': 'foo'})
+      createPackage('test2', {body: 'ctrl-c': 'foo'})
     ]
     s = atom.packages
     atom.packages =
@@ -55,23 +60,26 @@ describe 'Dynamic Modes - Package Test', ->
     atom.packages = s
 
   describe '::getPackageMode', ->
-    it 'returns a keymap', ->
+    it 'returns an executable mode', ->
       k = modes.getPackageMode false, 'test2'
-      k = k[0]
       expect(k.keymap).toBeUndefined()
-      expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeDefined()
       k.execute(false)
       expect(atom.packages.getLoadedPackage('test2').deactivateKeymaps).toHaveBeenCalled()
       k.execute(true)
       expect(atom.packages.getLoadedPackage('test2').activateKeymaps).toHaveBeenCalled()
 
-  describe '::user-packages', ->
     it 'returns a keymap', ->
+      k = modes.getPackageMode false, 'test2', true
+      expect(k.keymap).toEqual
+        'body':
+          'ctrl-c': 'unset!'
+      expect(k.execute).toBeUndefined()
+
+  describe '::user-packages', ->
+    it 'returns an executable mode', ->
       k = modes['user-packages'] false
-      k = k[0]
       expect(k.keymap).toBeUndefined()
-      expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeDefined()
       k.execute(false)
       expect(atom.packages.getLoadedPackage('test0').deactivateKeymaps).toHaveBeenCalled()
@@ -80,33 +88,42 @@ describe 'Dynamic Modes - Package Test', ->
       expect(atom.packages.getLoadedPackage('test0').activateKeymaps).toHaveBeenCalled()
       expect(atom.packages.getLoadedPackage('test1').activateKeymaps).toHaveBeenCalled()
 
-  describe '::core-packages', ->
     it 'returns a keymap', ->
+      k = modes['user-packages'] false, true
+      expect(k.keymap).toEqual
+        body:
+          'ctrl-a': 'unset!'
+          'ctrl-b': 'unset!'
+      expect(k.execute).toBeUndefined()
+
+  describe '::core-packages', ->
+    it 'returns an executable mode', ->
       k = modes['core-packages'] false
-      k = k[0]
       expect(k.keymap).toBeUndefined()
-      expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeDefined()
       k.execute(false)
       expect(atom.packages.getLoadedPackage('test2').deactivateKeymaps).toHaveBeenCalled()
       k.execute(true)
       expect(atom.packages.getLoadedPackage('test2').activateKeymaps).toHaveBeenCalled()
 
+    it 'returns a keymap', ->
+      k = modes['core-packages'] false, true
+      expect(k.keymap).toEqual
+        body:
+          'ctrl-c': 'unset!'
+      expect(k.execute).toBeUndefined()
+
   describe '::all-core', ->
     it 'returns a keymap', ->
       k = modes['all-core'] false
-      k = k[0]
       expect(k.keymap).toBeDefined()
-      expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeUndefined()
       expect(k.keymap).toEqual {s1: k0: 'unset!'}
 
   describe '::custom', ->
     it 'returns a keymap', ->
       k = modes['custom'] false
-      k = k[0]
       expect(k.keymap).toBeDefined()
-      expect(k.inherited).toBeUndefined()
       expect(k.execute).toBeUndefined()
       expect(k.keymap).toEqual
         s0:
