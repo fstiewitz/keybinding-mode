@@ -208,7 +208,7 @@ module.exports =
   appendFile: (file) ->
     new Promise((resolve, reject) =>
       fs.exists file, (exists) =>
-        return reject('File does not exist: ' + file) unless exists
+        return reject('Advanced keymap does not exist: ' + file) unless exists
         CSON.readFile file, (error, contents) =>
           if error? or not contents?
             report 'Could not read ' + file
@@ -255,7 +255,8 @@ module.exports =
                 resolved: false
                 execute: null
                 keymap: null
-            @mode_subscription.add atom.commands.add 'atom-workspace', command_map
+            if Object.keys(command_map) isnt 0
+              @mode_subscription.add atom.commands.add 'atom-workspace', command_map
             @emitter.emit 'append', file
             resolve()
           , reject)
