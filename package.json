@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "description": "Advanced keymap management in Atom",
   "keywords": [
+    "keymap"
   ],
   "repository": "https://github.com/deprint/keybinding-mode",
   "license": "MIT",
@@ -25,7 +26,7 @@
       "type": "integer",
       "default": "3000",
       "title": "Autostart Delay",
-      "description": "Delay loading of autostart mode to give packages enough time to provide their own modes"
+      "description": "Delay loading of autostart mode to give packages enough time to provide their own modes (in ms)"
     }
   },
   "consumedServices": {

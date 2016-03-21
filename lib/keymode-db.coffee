@@ -279,7 +279,7 @@ module.exports =
     @scheduledReload = setTimeout(=>
       @scheduledReload = null
       @reload()
-    , atom.config.get('keybinding-mode.delay') * 1000)
+    , atom.config.get('keybinding-mode.delay'))
 
   resolveAutostart: ->
     new Promise((resolve, reject) =>
