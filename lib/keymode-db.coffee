@@ -187,12 +187,12 @@ module.exports =
 
   deactivateKeymap: (name) ->
     @current_keymap = null
-    @key_subscription?.dispose()
     mode = @resolveWithTest(name)
     unless mode?
       console.log "Could not resolve #{name}"
       return
     mode.execute?(true)
+    @key_subscription?.dispose()
     @emitter.emit 'deactivate', name
 
   activateKeymap: (name) ->
