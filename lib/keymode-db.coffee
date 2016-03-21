@@ -114,6 +114,10 @@ minusKeymap = (sobj) ->
     keymap[keybinding.selector][keybinding.keystrokes] = 'unset!'
   return {keymap}
 
+resolveLocalKeymap = (callback) ->
+  return callback(false) unless atom.project.getPaths()[0]?
+  fs.exists (f = path.join(atom.project.getPaths()[0], '.advanced-keybindings.cson')), callback
+
 module.exports =
   modes: {} # Stores keybinding modes
   mode_subscription: null # Stores atom.commands.add bindings
@@ -283,7 +287,7 @@ module.exports =
 
   resolveAutostart: ->
     new Promise((resolve, reject) =>
-      fs.exists (f = path.join(atom.project.getPaths()[0], '.advanced-keybindings.cson')), (exists) =>
+      resolveLocalKeymap (exists) =>
         if exists
           p = [@appendFile(f)]
         else
