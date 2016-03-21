@@ -171,3 +171,71 @@ Activate mode at startup.
 ### Local keymaps
 
 If you have only one open project and it contains a `.advanced-keybindings.cson`, it loads modes from that file at startup. `!autostart` in local keymaps override global `!autostart`.
+
+### Service Interface
+
+```json
+"providedServices": {
+  "keybinding-mode.modes": {
+    "versions": {
+      "1.0.0": "provideModes"
+    }
+  }
+}
+```
+
+```coffee
+provideModes: ->
+  name: 'package-name'
+  modes:
+    'static-mode': [
+      '!all'
+        keymap:
+          'atom-text-editor':
+            #...
+    ]
+    'dynamic-mode': (op, sobj) ->
+      #...
+```
+
+Packages can provide two types of modes:
+
+* __Static__ modes can be used like your user-defined modes (with their name). Unlike user modes, you have to use the `['!all', ...]` construct.
+
+* __Dynamic__ modes are functions that return a keybinding mode:
+
+  * `op` is _true_(`+dynamic-mode`) or _false_(`-dynamic-mode`).
+
+  ```coffee
+    sobj =
+      source
+      getKeyBindings
+      filter
+      merge
+      is_static: false
+      flags:
+        no_filter: false
+        resolved: false
+        not: false
+  ```
+
+  * `source` is either `!all` or `source.keymap` contains the current source keymap.
+
+  * `getKeyBindings` returns the current source as an Array of `{keystrokes, command, selector}`.
+
+  * `filter(dest, source, invert)` removes all keybindings from `dest` that are not in `source` (different commands are allowed). `invert = true` removes all keybindings from `dest` that are in `source`.
+
+  * `merge(dest, source)` merges the keymap of `source` into `dest`
+
+  * `is_static` should stay _false_, but you can set it to _true_ to cache the returned keymap.
+
+  * `no_filter` should be set to _true_ if you use `filter` or `getKeyBindings`.
+
+  * `resolved` should be _true_ if you return an object containing a `keymap` and optionally an `execute` function (see below).
+
+  * `not` is the `invert` argument of the internal filter. Only works if `no_filter` is _false_.
+
+  * Dynamic modes return the same values as your user-defined ones, with one exception:
+  Along with `keymap`, you can also return an `execute(reset = false)` function, which is called with _true_ on deactivation.
+
+These modes do __not__ get their own commands, it is up to the user to include them in his advanced keymap.
