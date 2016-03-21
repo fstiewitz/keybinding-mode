@@ -44,7 +44,7 @@ module.exports = KeybindingMode =
     extensions = null
 
   consumeKeybindingMode: (o) ->
-    (serviceMaps ? serviceMaps = require './service_maps').consume o
+    (serviceMaps ? serviceMaps = require './service-modes').consume o
 
   consumeKeybindingExtension: (o) ->
     extensions.consume o

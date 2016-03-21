@@ -20,7 +20,6 @@ module.exports =
 
   remove: (name) ->
     return unless @consumed[name]?
-    @consumed[name].disp?()
     @smodes[mode] = null for mode in @consumed[name].smodes
     @dmodes[mode] = null for mode in @consumed[name].dmodes
     delete @consumed[name]
@@ -41,7 +40,6 @@ module.exports =
     r =
       smodes: []
       dmodes: []
-      disp: null
     for key in Object.keys(modes)
       if (typeof modes[key]) is 'object'
         if @smodes[key]? or @dmodes[key]?
@@ -58,7 +56,6 @@ module.exports =
       else
         report "#{key} of unsupported type: #{typeof modes[key]}"
         return
-    r.disp = @db.addCommands r.smodes, 1
     @consumed[name] = r
     @db.scheduleReload()
     new Disposable(=> @remove(name))

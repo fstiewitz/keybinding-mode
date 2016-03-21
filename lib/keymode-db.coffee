@@ -130,6 +130,7 @@ module.exports =
     regexModes.activate()
     serviceModes.activate(this)
     @scheduledReload = null
+    @names = []
 
   deactivate: ->
     @scheduledReload = null
@@ -177,9 +178,6 @@ module.exports =
     )
 
   toggleKeymap: (name) ->
-    if atom.config.get('keybinding-mode.debugger')
-      @resolveWithTest name
-      return
     if name is @current_keymap
       @deactivateKeymap name
     else
@@ -191,14 +189,18 @@ module.exports =
     @current_keymap = null
     @key_subscription?.dispose()
     mode = @resolveWithTest(name)
-    return unless mode?
+    unless mode?
+      console.log "Could not resolve #{name}"
+      return
     mode.execute?(true)
     @emitter.emit 'deactivate', name
 
   activateKeymap: (name) ->
     @current_keymap = name
     mode = @resolveWithTest(name)
-    return unless mode?
+    unless mode?
+      console.log "Could not resolve #{name}"
+      return
     mode.execute?()
     @key_subscription = atom.keymaps.add 'keybinding-mode:' + name, mode.keymap
     @emitter.emit 'activate', name
@@ -228,6 +230,7 @@ module.exports =
                   report('File path must be string: ' + file)
                   continue
                 promises.push @appendFile(path.resolve(path.dirname(file), next_file))
+              continue
             else if contents[mode] instanceof Array
               contents[mode].splice(0, 0, '!all')
             else
@@ -243,9 +246,10 @@ module.exports =
           Promise.all(promises).then(=>
             if autostart?
               if autostart instanceof Array
+                contents['!autostart'] = autostart
                 contents['!autostart'].splice(0, 0, '!all')
               else
-                contents['!autostart'] = ['!all', contents[mode]]
+                contents['!autostart'] = ['!all', autostart]
               @modes['!autostart'] =
                 inherited: contents['!autostart']
                 resolved: false
@@ -385,9 +389,11 @@ module.exports =
     if (@modes[inh])?
       sobj.is_static = true
       return @resolve inh, sobj
-    if (@modes[inh] = extensions.getStatic inh, sobj)?
+    if (m = extensions.getStatic inh, sobj)?
+      @modes[inh] = inherited: m
       return @resolve inh, sobj
-    if (@modes[inh] = serviceModes.getStaticMode inh, sobj)?
+    if (m = serviceModes.getStaticMode inh, sobj)?
+      @modes[inh] = inherited: m
       return @resolve inh, sobj
     report "Assertion: getStatic must work on #{inh}"
     return null

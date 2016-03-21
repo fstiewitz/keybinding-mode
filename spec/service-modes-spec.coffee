@@ -26,7 +26,6 @@ describe 'Mode Provider - Service', ->
     spyOn(db, 'addCommands')
     disp = modes.consume mode
     expect(db.scheduleReload).toHaveBeenCalled()
-    expect(db.addCommands).toHaveBeenCalledWith ['mode1', '.mode3'], 1
 
   afterEach ->
     expect(modes.smodes['mode1']).toEqual mode.modes.mode1
