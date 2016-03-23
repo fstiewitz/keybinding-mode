@@ -295,7 +295,7 @@ module.exports =
         Promise.all(p).then(=>
           return resolve('default') unless @modes['!autostart']?
           suppressed = true
-          if (typeof @modes['!autostart'].inherited[1]) is 'string' and @isStatic(@modes['!autostart'].inherited[1])
+          if (@modes['!autostart'].inherited.length is 2) and (typeof @modes['!autostart'].inherited[1]) is 'string' and @isStatic(@modes['!autostart'].inherited[1])
             @activateKeymap @modes['!autostart'].inherited[1]
             suppressed = false
             resolve(@modes['!autostart'].inherited[1])

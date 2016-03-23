@@ -6,10 +6,10 @@ keybinding-mode
 
 ## HowTo
 1. Open your keymode configuration with `keybinding-mode:open-advanced-keymap`.
-2. Configure your keymaps. Bind keymaps to hotkeys (see [Hidden Keymaps](#hidden-keymaps)), etc.
+2. Configure your keymaps. Bind keymaps to hotkeys (see [Hidden Keymaps](https://github.com/deprint/keybinding-mode/blob/master/README.md#hidden-keymaps)), etc.
 3. `window:reload` or `keybinding-mode:reload`.
 
-There can only be one keymap active at a time. To load a keymap at startup, see [Autostart](#autostart).
+There can only be one keymap active at a time. To load a keymap at startup, see [Autostart](https://github.com/deprint/keybinding-mode/blob/master/README.md#autostart).
 
 ## Syntax
 
@@ -190,9 +190,9 @@ provideModes: ->
   modes:
     'static-mode': [
       '!all'
-        keymap:
-          'atom-text-editor':
-            #...
+      keymap:
+        'atom-text-editor':
+          #...
     ]
     'dynamic-mode': (op, sobj) ->
       #...
