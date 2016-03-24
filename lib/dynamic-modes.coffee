@@ -46,7 +46,7 @@ module.exports =
   isValidMode: (name) ->
     return false unless /^(\+|\-)/.test name
     _name = name.substr(1)
-    _name = name.substr(1) if _name[0] is '!'
+    _name = _name.substr(1) if _name[0] is '!'
     return true if _name is ''
     return true if _name in [
       'core-packages'
