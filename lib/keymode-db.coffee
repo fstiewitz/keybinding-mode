@@ -83,7 +83,7 @@ diff = (mode) ->
     selector = m[s]
     for k in Object.keys selector
       exists = all[s]?[k]?
-      if ((not exists) and s isnt '*' and selector[k] is 'unset!') or all[s]?[k] is selector[k]
+      if ((not exists) and selector[k] is 'unset!') or all[s]?[k] is selector[k]
         delete selector[k]
     if Object.keys(selector).length is 0
       delete m[s]
@@ -441,7 +441,7 @@ module.exports =
       if @isPattern inh
         m = m.concat @getStaticModes inh, name
       else if (inh instanceof Array) and @isCombined inh
-        m.push @getCombined inh
+        m.push @getCombined inh.slice()
       else
         m.push inh
     return m

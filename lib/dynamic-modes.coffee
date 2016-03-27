@@ -144,27 +144,27 @@ module.exports =
 
   'lower': ->
     keys =
-      '*': {}
+      'body': {}
       'atom-workspace atom-text-editor[mini]': {}
     for key in 'abcdefghijklmnopqrstuvwxyz'.split('')
-      keys['*'][key] = 'unset!'
+      keys['body'][key] = 'no-command'
       keys['atom-workspace atom-text-editor[mini]'][key] = 'native!'
     return keymap: keys
 
   'upper': ->
     keys =
-      '*': {}
+      'body': {}
       'atom-workspace atom-text-editor[mini]': {}
     for key in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
-      keys['*'][key] = 'unset!'
+      keys['body'][key] = 'no-command'
       keys['atom-workspace atom-text-editor[mini]'][key] = 'native!'
     return keymap: keys
 
   'numbers': ->
     keys =
-      '*': {}
+      'body': {}
       'atom-workspace atom-text-editor[mini]': {}
     for key in [0..9]
-      keys['*'][key] = 'unset!'
+      keys['body'][key] = 'no-command'
       keys['atom-workspace atom-text-editor[mini]'][key] = 'native!'
     return keymap: keys
