@@ -114,9 +114,11 @@ minusKeymap = (sobj) ->
     keymap[keybinding.selector][keybinding.keystrokes] = 'unset!'
   return {keymap}
 
-resolveLocalKeymap = (callback) ->
-  return callback(false) unless atom.project.getPaths()[0]?
-  fs.exists (f = path.join(atom.project.getPaths()[0], '.advanced-keybindings.cson')), callback
+resolveLocalKeymap = (callback, arr_in = atom.project.getPaths(), arr_out = []) ->
+  return callback(arr_out) if arr_in.length is 0
+  fs.exists (f = path.join(arr_in.shift(), '.advanced-keybindings.cson')), (exists) ->
+    arr_out.push f if exists
+    resolveLocalKeymap callback, arr_in, arr_out
 
 module.exports =
   modes: {} # Stores keybinding modes
@@ -167,7 +169,7 @@ module.exports =
   reload: (f) ->
     unless f?
       f = path.join(path.dirname(atom.config.getUserConfigPath()), 'keybinding-mode.cson')
-    @deactivateKeymap(@current_keymap) if @current_keymap?
+    @deactivateKeymap() if @current_keymap?
     @mode_subscription?.dispose()
     @mode_subscription = new CompositeDisposable
     @modes = {}
@@ -182,31 +184,30 @@ module.exports =
     )
 
   toggleKeymap: (name) ->
-    if name is @current_keymap
-      @deactivateKeymap name
+    if name is @current_keymap.name
+      @deactivateKeymap()
     else
-      @deactivateKeymap @current_keymap if @current_keymap?
+      @deactivateKeymap() if @current_keymap?
       @activateKeymap name
       @emitter.emit 'toggle', name
 
-  deactivateKeymap: (name) ->
-    @current_keymap = null
-    mode = @resolveWithTest(name)
-    unless mode?
-      console.log "Could not resolve #{name}"
-      return
-    mode.execute?(true)
+  deactivateKeymap: ->
+    @current_keymap.execute?(true)
     @key_subscription?.dispose()
+    name = @current_keymap.name
+    @current_keymap = null
     @emitter.emit 'deactivate', name
 
   activateKeymap: (name) ->
-    @current_keymap = name
-    mode = @resolveWithTest(name)
-    unless mode?
+    @current_keymap =
+      name: name
+    @current_keymap.mode = @resolveWithTest(name)
+    unless @current_keymap.mode?
       console.log "Could not resolve #{name}"
+      @current_keymap = null
       return
-    mode.execute?()
-    @key_subscription = atom.keymaps.add 'keybinding-mode:' + name, mode.keymap
+    @current_keymap.mode.execute?()
+    @key_subscription = atom.keymaps.add 'keybinding-mode:' + name, @current_keymap.mode.keymap
     @emitter.emit 'activate', name
 
   appendFile: (file) ->
@@ -287,11 +288,10 @@ module.exports =
 
   resolveAutostart: ->
     new Promise((resolve, reject) =>
-      resolveLocalKeymap (exists) =>
-        if exists
-          p = [@appendFile(f)]
-        else
-          p = []
+      resolveLocalKeymap (files) =>
+        p = []
+        for file in files
+          p.push @appendFile(file)
         Promise.all(p).then(=>
           return resolve('default') unless @modes['!autostart']?
           suppressed = true
@@ -303,9 +303,9 @@ module.exports =
             @activateKeymap '!autostart'
             suppressed = false
             resolve('!autostart')
-        , ->
+        , (e) ->
           suppressed = false
-          reject()
+          reject(e)
         )
     )
 
