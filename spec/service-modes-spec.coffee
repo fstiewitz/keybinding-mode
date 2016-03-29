@@ -4,8 +4,10 @@ db = require '../lib/keymode-db'
 describe 'Mode Provider - Service', ->
   mode = null
   disp = null
+  deactivated = false
 
   beforeEach ->
+    deactivated = false
     db.activate()
     mode =
       name: 'test'
@@ -28,14 +30,16 @@ describe 'Mode Provider - Service', ->
     expect(db.scheduleReload).toHaveBeenCalled()
 
   afterEach ->
-    expect(modes.smodes['mode1']).toEqual mode.modes.mode1
-    expect(modes.dmodes['mode2']).toEqual mode.modes.mode2
-    expect(modes.smodes['.mode3']).toEqual mode.modes['.mode3']
-    disp.dispose()
-    expect(modes.smodes['mode1']).toBe null
-    expect(modes.dmodes['mode2']).toBe null
-    expect(modes.smodes['.mode3']).toBe null
-    db.deactivate()
+    unless deactivated
+      expect(modes.smodes['mode1']).toEqual mode.modes.mode1
+      expect(modes.dmodes['mode2']).toEqual mode.modes.mode2
+      expect(modes.smodes['.mode3']).toEqual mode.modes['.mode3']
+      disp.dispose()
+      expect(modes.smodes['mode1']).toBe null
+      expect(modes.dmodes['mode2']).toBe null
+      expect(modes.smodes['.mode3']).toBe null
+      db.deactivate()
+      deactivated = true
 
   describe 'Test validMode', ->
     it 'valid static', ->
@@ -67,3 +71,22 @@ describe 'Mode Provider - Service', ->
             'ctrl-k': 'foo'
     it 'invalid dynamic', ->
       expect(modes.getDynamicMode '+mode3').toBeUndefined()
+
+  describe 'on ::deactivate', ->
+
+    beforeEach ->
+      spyOn(modes, 'remove').andCallThrough()
+      modes.deactivate()
+      deactivated = true
+
+    it 'calls remove', ->
+      expect(modes.remove).toHaveBeenCalledWith 'test'
+
+    it 'removes all modes', ->
+      expect(modes.dmodes).toBeNull()
+      expect(modes.smodes).toBeNull()
+      expect(modes.consumed).toBeNull()
+
+    describe 'on dispose after remove', ->
+      it 'throws no errors', ->
+        expect(-> disp.dispose()).not.toThrow()

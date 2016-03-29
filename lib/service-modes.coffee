@@ -19,7 +19,7 @@ module.exports =
     @db = null
 
   remove: (name) ->
-    return unless @consumed[name]?
+    return unless @consumed?[name]?
     @smodes[mode] = null for mode in @consumed[name].smodes
     @dmodes[mode] = null for mode in @consumed[name].dmodes
     delete @consumed[name]
