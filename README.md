@@ -55,7 +55,7 @@ Static keymaps are objects with one key `keymap` which contains a custom keymap.
 ```
 
 Dynamic keymaps are generated on the fly. If the dynamic keymap begins with `+`,
-it adds the keymap. On `-`, it removes it. The following dynamic keymaps are
+it adds the keymap. On `-`, it removes (`unset!`s) it. The following dynamic keymaps are
 included in "vanilla keybinding-mode":
 
 * `+/-user-packages` enables/disables the keymap of all user packages.
@@ -64,6 +64,9 @@ included in "vanilla keybinding-mode":
 * `+/-custom` enables/disables your custom keymap.
 * `-upper`, `-lower`, `-numbers` disables uppercase letters, lowercase letters and numbers in your text editor, but leaves mini editors untouched.
 * `+/-package-name` enables/disables the keymap of package `package-name`.
+
+`+/-user-packages`, `+/-core-packages` and `+/-package-name` load/remove package keymaps instead of `unset!`ing them.
+To force these three modes to return a keymap, use `+!` and `-!`.
 
 ### Regular Expressions
 
@@ -170,7 +173,7 @@ Activate mode at startup.
 
 ### Local keymaps
 
-If you have only one open project and it contains a `.advanced-keybindings.cson`, it loads modes from that file at startup. `!autostart` in local keymaps override global `!autostart`.
+If your project contains a `.advanced-keybindings.cson`, it loads modes from that file at startup. `!autostart` in local keymaps override global `!autostart`.
 
 ### Service Interface
 
