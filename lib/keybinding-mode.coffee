@@ -33,6 +33,7 @@ module.exports = KeybindingMode =
       @keybindingElement?.innerText = 'default'
     @subscriptions.add kdb.onActivate (name) =>
       @keybindingElement?.innerText = name
+    kdb.reload() unless atom.packages.deferredActivationHooks?
 
   deactivate: ->
     @subscriptions.dispose()

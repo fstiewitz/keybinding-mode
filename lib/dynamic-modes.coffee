@@ -57,7 +57,7 @@ module.exports =
       'lower'
       'numbers'
     ]
-    return true for pack in atom.packages.getLoadedPackages() when pack.name is _name
+    return true for pack in atom.packages.getAvailablePackageNames() when pack is _name
     return false
 
   'user-packages': (op, asKeymap) ->

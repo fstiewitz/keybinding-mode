@@ -184,7 +184,7 @@ module.exports =
     )
 
   toggleKeymap: (name) ->
-    if name is @current_keymap.name
+    if name is @current_keymap?.name
       @deactivateKeymap()
     else
       @deactivateKeymap() if @current_keymap?
