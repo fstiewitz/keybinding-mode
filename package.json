@@ -1,7 +1,7 @@
 {
   "name": "keybinding-mode",
   "main": "./lib/keybinding-mode",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Advanced keymap management in Atom",
   "keywords": [
     "keymap"
